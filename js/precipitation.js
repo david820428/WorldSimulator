@@ -4,7 +4,7 @@
 //
 // 1. zonal(lat)      latitude bands: wet equator, dry subtropics, wetter mid-latitudes, dry poles
 // 2. inlandFactor    drier the further from any ocean tile, but never close to zero
-// 3. monsoonFloor    ocean within a few tiles to the EAST guarantees about 1000 mm
+// 3. monsoonFloor    ocean within 3 tiles to the EAST guarantees about 1000 mm (tapers off toward the poles)
 // 4. mountainFactor  wind blows rain onto windward slopes and starves the leeward side
 
 export const PRECIPITATION_DEFAULTS = {
@@ -16,8 +16,10 @@ export const PRECIPITATION_DEFAULTS = {
   inlandScale: 8,        // tiles; how quickly rainfall fades with distance from the sea
 
   monsoonMm: 1000,       // rainfall floor on a coast that faces ocean to the east
-  monsoonReach: 5,       // ocean within this many tiles east gives the full floor
+  monsoonReach: 3,       // ocean within this many tiles east gives the full floor
   monsoonFade: 4,        // the floor then fades out over this many extra tiles
+  monsoonFullLat: 45,    // the floor is at full strength up to this latitude...
+  monsoonEndLat: 75,     // ...and tapers to nothing by this latitude (no polar monsoon)
 
   mountainReach: 5,      // a mountain's influence ends this many tiles away
   windwardBoost: 0.8,    // up to +80% right in front of a mountain
@@ -90,6 +92,7 @@ export function applyPrecipitation(map, opts = {}) {
   for (let row = 0; row < map.rows; row++) {
     const lat = rowLat(row), base = zonal(lat), wind = windAt(lat, o.beltEdge);
     const mag = Math.abs(wind), step = wind >= 0 ? 1 : -1;            // step = downwind direction
+    const monsoon = o.monsoonMm * (1 - smooth((Math.abs(lat) - o.monsoonFullLat) / (o.monsoonEndLat - o.monsoonFullLat)));
 
     for (let col = 0; col < W; col++) {
       const i = row * W + col;
@@ -99,14 +102,14 @@ export function applyPrecipitation(map, opts = {}) {
       const inland = o.inlandMin + (1 - o.inlandMin) * Math.exp(-(distSea[i] - 1) / o.inlandScale);
       let p = base * inland;
 
-      // 3. monsoon: ocean to the east lifts the floor to about 1000 mm
+      // 3. monsoon: ocean to the east lifts the floor to about 1000 mm (less toward the poles)
       let eastDist = 0;
       for (let k = 1; k <= o.monsoonReach + o.monsoonFade; k++) {
         if (!isLand(at(row, col + k))) { eastDist = k; break; }
       }
       if (eastDist) {
-        const floor = eastDist <= o.monsoonReach ? o.monsoonMm
-          : o.monsoonMm * (1 - smooth((eastDist - o.monsoonReach) / o.monsoonFade));
+        const floor = eastDist <= o.monsoonReach ? monsoon
+          : monsoon * (1 - smooth((eastDist - o.monsoonReach) / o.monsoonFade));
         p = Math.max(p, floor);
       }
 

@@ -30,6 +30,7 @@ export function applyElevation(map, noise, opts = {}) {
   const uplift = new Float32Array(N);   // mountain building (continental side, island arcs)
   const trench = new Float32Array(N);   // oceanic plate diving under another
   const ridge = new Float32Array(N);    // oceanic plates pulling apart
+  const volc = new Float32Array(N);     // volcanic potential (not used for elevation)
 
   for (let i = 0; i < N; i++) {
     const pi = plates[plateOf[i]];
@@ -51,15 +52,18 @@ export function applyElevation(map, noise, opts = {}) {
           uplift[i] = Math.max(uplift[i], s * (colliding ? 1.2 : 0.6));    // continental collision
         } else if (iCont) {
           uplift[i] = Math.max(uplift[i], s);                              // subduction: coastal range
+          volc[i] = Math.max(volc[i], s);
         } else if (jCont) {
           trench[i] = Math.max(trench[i], s);                              // ...and its ocean trench
         } else if (pi.id < pj.id) {
           uplift[i] = Math.max(uplift[i], s * 0.7);                        // island arc
+          volc[i] = Math.max(volc[i], s * 0.9);
         } else {
           trench[i] = Math.max(trench[i], s);
         }
       } else if (!iCont && !jCont) {
         ridge[i] = Math.max(ridge[i], Math.min(1, -conv / o.speedScale)); // mid-ocean ridge
+        volc[i] = Math.max(volc[i], 0.5 * Math.min(1, -conv / o.speedScale));
       }
     }
   }
@@ -69,6 +73,7 @@ export function applyElevation(map, noise, opts = {}) {
   const tr = spread(nb, plateOf, trench, 0.60);
   const rd = spread(nb, plateOf, ridge, 0.70);
   map.uplift = up;
+  map.volcanic = spread(nb, plateOf, volc, 0.70);
 
   // ---- 3. Land: three levels by rank ---------------------------------------
   const landIdx = [], landScore = [];

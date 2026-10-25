@@ -11,12 +11,13 @@ document.getElementById('stats').textContent =
   `${map.cols} × ${map.rows} = ${map.size.toLocaleString()} tiles, wraps east–west`;
 
 // ---- hover ----
+const rainText = (i) => TERRAIN[map.terrain[i]].land ? ` · ${Math.round(map.precipitation[i])} mm` : '';
 function setHover(px, py) {
   const t = view.pickTile(px, py);
   const same = t && view.hover && t.c === view.hover.c && t.row === view.hover.row;
   if (!same) { view.hover = t; view.dirty = true; }
   info.textContent = t
-    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
+    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
     : 'Hover over a tile';
 }
 
@@ -92,22 +93,34 @@ const seedInput = document.getElementById('seed');
 const report = document.getElementById('report');
 let meta = null, mode = 'land';
 
-// Temperature colour ramp: [°C, colour]
+// Colour ramps for the data views: [value, colour] stops
 const TEMP_STOPS = [[-30, '#4b3a9c'], [-15, '#3f78d4'], [0, '#8fd3ee'], [10, '#a9d98c'], [20, '#f2e07a'], [27, '#e8643c'], [30, '#d9442f']];
+const RAIN_STOPS = [[0, '#c9a66b'], [250, '#e6d08a'], [500, '#cfe08a'], [1000, '#7cc47a'], [1500, '#3fa58a'], [2000, '#2a7fa6'], [2500, '#2a4f9c']];
+const LEGENDS = {
+  temp: { stops: TEMP_STOPS, min: -30, max: 30, labels: ['−30°C', '30°C'] },
+  rain: { stops: RAIN_STOPS, min: 0, max: 2500, labels: ['0 mm', '2500+ mm'] },
+};
 const hex = (h) => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
-function tempColor(t) {
-  if (t <= TEMP_STOPS[0][0]) return TEMP_STOPS[0][1];
-  for (let k = 1; k < TEMP_STOPS.length; k++) {
-    const [t1, c1] = TEMP_STOPS[k];
-    if (t <= t1) {
-      const [t0, c0] = TEMP_STOPS[k - 1], f = (t - t0) / (t1 - t0), a = hex(c0), b = hex(c1);
-      return `rgb(${a.map((v, j) => Math.round(v + (b[j] - v) * f)).join(',')})`;
+function rampColor(stops, v) {
+  if (v <= stops[0][0]) return stops[0][1];
+  for (let k = 1; k < stops.length; k++) {
+    const [v1, c1] = stops[k];
+    if (v <= v1) {
+      const [v0, c0] = stops[k - 1], f = (v - v0) / (v1 - v0), a = hex(c0), b = hex(c1);
+      return `rgb(${a.map((x, j) => Math.round(x + (b[j] - x) * f)).join(',')})`;
     }
   }
-  return TEMP_STOPS[TEMP_STOPS.length - 1][1];
+  return stops[stops.length - 1][1];
 }
-document.querySelector('#temp-legend .ramp').style.background = 'linear-gradient(to right,' +
-  TEMP_STOPS.map(([t, c]) => `${c} ${((t + 30) / 60 * 100).toFixed(1)}%`).join(',') + ')';
+function showLegend() {
+  const L = LEGENDS[mode], el = document.getElementById('legend');
+  el.hidden = !L;
+  if (!L) return;
+  el.querySelector('.ramp').style.background = 'linear-gradient(to right,' +
+    L.stops.map(([v, c]) => `${c} ${((v - L.min) / (L.max - L.min) * 100).toFixed(1)}%`).join(',') + ')';
+  el.children[0].textContent = L.labels[0];
+  el.children[2].textContent = L.labels[1];
+}
 
 const hue = (id) => (id * 137.5) % 360;           // golden-angle hues: neighbours differ
 
@@ -115,13 +128,17 @@ function paint() {
   const cols = view.colors;
   for (let i = 0; i < map.size; i++) {
     if (mode === 'land') { cols[i] = TERRAIN[map.terrain[i]].color; continue; }
-    if (mode === 'temp') { cols[i] = tempColor(map.temperature[i]); continue; }
+    if (mode === 'temp') { cols[i] = rampColor(TEMP_STOPS, map.temperature[i]); continue; }
+    if (mode === 'rain') {
+      cols[i] = TERRAIN[map.terrain[i]].land ? rampColor(RAIN_STOPS, map.precipitation[i]) : '#1d3140';
+      continue;
+    }
     const p = map.plates[map.plate[i]], land = TERRAIN[map.terrain[i]].land;
     cols[i] = p.type === 'continental'
       ? `hsl(${hue(p.id)} 60% ${land ? 58 : 34}%)`
       : `hsl(${hue(p.id)} 22% ${land ? 50 : 24}%)`;
   }
-  document.getElementById('temp-legend').hidden = mode !== 'temp';
+  showLegend();
   view.dirty = true;
 }
 
@@ -135,6 +152,8 @@ function renderReport() {
     `<li><i style="background:${TERRAIN[id].color}"></i>${TERRAIN[id].name}, ${meta.elevation[id]} tiles${
       id === 4 ? ' (impassable)' : id === 0 ? ' (not navigable yet)' : ''}</li>`).join('');
   const tempLine = `<p>Temperature ranges from ${meta.temperature.min.toFixed(0)}°C (polar mountains) to ${meta.temperature.max.toFixed(0)}°C (equator).</p>`;
+  const pr = meta.precipitation;
+  const rainLine = `<p>Land rainfall: ${Math.round(pr.min)} to ${Math.round(pr.max)} mm a year, average ${Math.round(pr.mean)} mm.</p>`;
   const v = meta.volcanoes;
   const nb = v.filter(x => x.kind === 'boundary').length, nh = v.length - nb, ni = v.filter(x => x.island).length;
   const volcanoLine = `<p>${v.length} volcanoes: ${nb} along plate borders, ${nh} mid-plate hotspot${nh === 1 ? '' : 's'}` +
@@ -148,6 +167,7 @@ function renderReport() {
      <ul>${legend}</ul>
      ${volcanoLine}
      ${tempLine}
+     ${rainLine}
      <ul>${rows}</ul>` +
     (fused.length ? `<p>Collided and fused: ${fused.join('; ')}.</p>` : '');
 }

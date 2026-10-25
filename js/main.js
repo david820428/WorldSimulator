@@ -1,4 +1,4 @@
-import { WorldMap, TERRAIN, FEATURES } from './map.js';
+import { WorldMap, TERRAIN, FEATURES, BIOMES } from './map.js';
 import { Renderer } from './renderer.js';
 import { generateWorld } from './worldgen.js';
 
@@ -11,13 +11,14 @@ document.getElementById('stats').textContent =
   `${map.cols} × ${map.rows} = ${map.size.toLocaleString()} tiles, wraps east–west`;
 
 // ---- hover ----
+const biomeText = (i) => map.biome[i] ? ` · ${BIOMES[map.biome[i]].name}` : '';
 const rainText = (i) => TERRAIN[map.terrain[i]].land ? ` · ${Math.round(map.precipitation[i])} mm` : '';
 function setHover(px, py) {
   const t = view.pickTile(px, py);
   const same = t && view.hover && t.c === view.hover.c && t.row === view.hover.row;
   if (!same) { view.hover = t; view.dirty = true; }
   info.textContent = t
-    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
+    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))}${biomeText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
     : 'Hover over a tile';
 }
 
@@ -129,6 +130,10 @@ function paint() {
   for (let i = 0; i < map.size; i++) {
     if (mode === 'land') { cols[i] = TERRAIN[map.terrain[i]].color; continue; }
     if (mode === 'temp') { cols[i] = rampColor(TEMP_STOPS, map.temperature[i]); continue; }
+    if (mode === 'biome') {
+      cols[i] = map.biome[i] ? BIOMES[map.biome[i]].color : TERRAIN[map.terrain[i]].color;
+      continue;
+    }
     if (mode === 'rain') {
       cols[i] = TERRAIN[map.terrain[i]].land ? rampColor(RAIN_STOPS, map.precipitation[i]) : '#1d3140';
       continue;
@@ -154,6 +159,8 @@ function renderReport() {
   const tempLine = `<p>Temperature ranges from ${meta.temperature.min.toFixed(0)}°C (polar mountains) to ${meta.temperature.max.toFixed(0)}°C (equator).</p>`;
   const pr = meta.precipitation;
   const rainLine = `<p>Land rainfall: ${Math.round(pr.min)} to ${Math.round(pr.max)} mm a year, average ${Math.round(pr.mean)} mm.</p>`;
+  const biomeList = BIOMES.slice(1).map(b =>
+    `<li><i style="background:${b.color}"></i>${b.name}, ${meta.biomes[b.id]} tiles</li>`).join('');
   const rl = meta.relief;
   const reliefLine = `<p>Extra relief: ${rl.mountainRanges} mountain ranges, ${rl.hillRanges} hill ranges, ${rl.basins} basins, ${rl.lakes} lakes, ${rl.islands} islands.</p>`;
   const v = meta.volcanoes;
@@ -171,6 +178,7 @@ function renderReport() {
      ${volcanoLine}
      ${tempLine}
      ${rainLine}
+     <ul>${biomeList}</ul>
      <ul>${rows}</ul>` +
     (fused.length ? `<p>Collided and fused: ${fused.join('; ')}.</p>` : '');
 }

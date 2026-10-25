@@ -148,12 +148,14 @@ function renderReport() {
     const sw = `<i style="background:hsl(${hue(p.id)} 60% 58%)"></i>`;
     return `<li>${sw}${p.name}, ${p.orientation}, ${meta.landByPlate[p.id]} land tiles</li>`;
   }).join('');
-  const legend = [4, 3, 2, 1, 0].map(id =>
+  const legend = [4, 3, 2, 5, 1, 0].map(id =>
     `<li><i style="background:${TERRAIN[id].color}"></i>${TERRAIN[id].name}, ${meta.elevation[id]} tiles${
       id === 4 ? ' (impassable)' : id === 0 ? ' (not navigable yet)' : ''}</li>`).join('');
   const tempLine = `<p>Temperature ranges from ${meta.temperature.min.toFixed(0)}°C (polar mountains) to ${meta.temperature.max.toFixed(0)}°C (equator).</p>`;
   const pr = meta.precipitation;
   const rainLine = `<p>Land rainfall: ${Math.round(pr.min)} to ${Math.round(pr.max)} mm a year, average ${Math.round(pr.mean)} mm.</p>`;
+  const rl = meta.relief;
+  const reliefLine = `<p>Extra relief: ${rl.mountainRanges} mountain ranges, ${rl.hillRanges} hill ranges, ${rl.basins} basins, ${rl.lakes} lakes, ${rl.islands} islands.</p>`;
   const v = meta.volcanoes;
   const nb = v.filter(x => x.kind === 'boundary').length, nh = v.length - nb, ni = v.filter(x => x.island).length;
   const volcanoLine = `<p>${v.length} volcanoes: ${nb} along plate borders, ${nh} mid-plate hotspot${nh === 1 ? '' : 's'}` +
@@ -165,6 +167,7 @@ function renderReport() {
     `<p>Land ${meta.landPct.toFixed(1)}%, ocean ${(100 - meta.landPct).toFixed(1)}%.
      ${big} main landmasses${small ? `, ${small} small islands` : ''}.</p>
      <ul>${legend}</ul>
+     ${reliefLine}
      ${volcanoLine}
      ${tempLine}
      ${rainLine}

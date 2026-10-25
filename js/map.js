@@ -1,9 +1,14 @@
 // World data. Pure data, no rendering. Later layers (elevation, climate,
 // biomes, resources) become more typed arrays alongside `terrain`.
 
+// Order matters: terrain ids are stored in map.terrain.
+// `sailable` is for early-game ships; deep ocean opens up with later technology.
 export const TERRAIN = [
-  { id: 0, name: 'Ocean', color: '#2d6f8e' },
-  { id: 1, name: 'Land',  color: '#a8bf86' },
+  { id: 0, name: 'Deep ocean',  color: '#1d4a6e', land: false, walkable: false, sailable: false },
+  { id: 1, name: 'Shallow sea', color: '#3d8bb0', land: false, walkable: false, sailable: true  },
+  { id: 2, name: 'Lowland',     color: '#a8bf86', land: true,  walkable: true,  sailable: false },
+  { id: 3, name: 'Hills',       color: '#c2ae6c', land: true,  walkable: true,  sailable: false },
+  { id: 4, name: 'Mountains',   color: '#837f7a', land: true,  walkable: false, sailable: false },
 ];
 
 // Neighbor offsets for "odd-r" layout (odd rows shoved right by half a hex).
@@ -17,9 +22,10 @@ export class WorldMap {
     this.cols = cols;
     this.rows = rows;
     this.size = cols * rows;
-    this.terrain = new Uint8Array(this.size); // 0 = Ocean, 1 = Land
+    this.terrain = new Uint8Array(this.size); // index into TERRAIN
     this.plate = new Uint8Array(this.size);   // plate id per tile (set by worldgen)
     this.plates = [];                         // plate descriptions (set by worldgen)
+    this.uplift = new Float32Array(this.size); // mountain-building strength from plate collisions
     this.field = new Float32Array(this.size); // raw height-like value, reused for elevation later
   }
 

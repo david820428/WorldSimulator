@@ -32,6 +32,7 @@ export class WorldMap {
     this.plate = new Uint8Array(this.size);   // plate id per tile (set by worldgen)
     this.plates = [];                         // plate descriptions (set by worldgen)
     this.temperature = new Float32Array(this.size); // annual mean °C
+    this.precipitation = new Float32Array(this.size); // annual mm (land tiles)
     this.feature = new Uint8Array(this.size); // index into FEATURES
     this.volcanic = new Float32Array(this.size); // volcanic potential near plate borders (0..1)
     this.uplift = new Float32Array(this.size); // mountain-building strength from plate collisions

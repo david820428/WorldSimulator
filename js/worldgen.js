@@ -5,6 +5,7 @@ import { applyRelief } from './relief.js';
 import { applyVolcanoes } from './volcanoes.js';
 import { applyTemperature } from './temperature.js';
 import { applyPrecipitation } from './precipitation.js';
+import { applyBiomes } from './biomes.js';
 import { TERRAIN } from './map.js';
 
 const ROW = Math.sqrt(3) / 2;       // row spacing relative to tile width
@@ -171,6 +172,7 @@ export function generateWorld(map, seed, opts = {}) {
   for (let i = 0; i < N; i++) land[i] = TERRAIN[map.terrain[i]].land ? 1 : 0;   // islands count as land
   const temperature = applyTemperature(map);      // layer 4: latitude + height
   const precipitation = applyPrecipitation(map);  // layer 5: wind, mountains, sea distance
+  const biomes = applyBiomes(map);                // layer 6: from temperature + rainfall only
   const levels = new Array(TERRAIN.length).fill(0);
   for (let i = 0; i < N; i++) levels[map.terrain[i]]++;
 
@@ -193,7 +195,7 @@ export function generateWorld(map, seed, opts = {}) {
   });
 
   return {
-    seed, landPct: landTiles / N * 100, elevation: levels, volcanoes, relief, temperature, precipitation,
+    seed, landPct: landTiles / N * 100, elevation: levels, volcanoes, relief, temperature, precipitation, biomes,
     landmasses: sizes.filter(Boolean).sort((a, b) => b - a),
     landByPlate,
     fused: [...groups.values()].filter(g => g.length > 1),

@@ -1,8 +1,6 @@
 // Canvas renderer + camera for a pointy-top hex map that wraps east-west.
 // World units: hex radius = HEX_SIZE. Tile (0,0) is centred at world (0,0).
 
-import { TERRAIN } from './map.js';
-
 const HEX_SIZE = 32;
 const SQRT3 = Math.sqrt(3);
 const MAX_ZOOM = 3;
@@ -25,6 +23,7 @@ export class Renderer {
     }
 
     this.cam = { x: this.worldW / 2, y: this.top + this.worldH / 2, zoom: 1 };
+    this.colors = new Array(map.size).fill('#2d6f8e');   // one CSS colour per tile
     this.hover = null;
     this.dirty = true;
     this.resize();
@@ -121,17 +120,18 @@ export class Renderer {
     const c1 = Math.ceil((cam.x + halfW) / hexW) + 1;
 
     ctx.lineWidth = 1 / cam.zoom;
-    ctx.strokeStyle = 'rgba(30, 50, 30, 0.35)';
     const outline = cam.zoom > 0.35;
+    const gridColor = 'rgba(15, 35, 45, 0.28)';
 
     for (let row = r0; row <= r1; row++) {
       const offset = (row & 1) * 0.5;
       for (let c = c0; c <= c1; c++) {
-        const t = map.terrain[map.index(c, row)];
-        ctx.fillStyle = TERRAIN[t].color;
+        const color = this.colors[map.index(c, row)];
+        ctx.fillStyle = color;
+        ctx.strokeStyle = outline ? gridColor : color;   // far out, hide hairline gaps
         this.hexPath(hexW * (c + offset), rowH * row);
         ctx.fill();
-        if (outline) ctx.stroke();
+        ctx.stroke();
       }
     }
 

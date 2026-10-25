@@ -1,4 +1,4 @@
-import { WorldMap, TERRAIN } from './map.js';
+import { WorldMap, TERRAIN, FEATURES } from './map.js';
 import { Renderer } from './renderer.js';
 import { generateWorld } from './worldgen.js';
 
@@ -16,7 +16,7 @@ function setHover(px, py) {
   const same = t && view.hover && t.c === view.hover.c && t.row === view.hover.row;
   if (!same) { view.hover = t; view.dirty = true; }
   info.textContent = t
-    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}`
+    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
     : 'Hover over a tile';
 }
 
@@ -115,6 +115,10 @@ function renderReport() {
   const legend = [4, 3, 2, 1, 0].map(id =>
     `<li><i style="background:${TERRAIN[id].color}"></i>${TERRAIN[id].name}, ${meta.elevation[id]} tiles${
       id === 4 ? ' (impassable)' : id === 0 ? ' (not navigable yet)' : ''}</li>`).join('');
+  const v = meta.volcanoes;
+  const nb = v.filter(x => x.kind === 'boundary').length, nh = v.length - nb, ni = v.filter(x => x.island).length;
+  const volcanoLine = `<p>${v.length} volcanoes: ${nb} along plate borders, ${nh} mid-plate hotspot${nh === 1 ? '' : 's'}` +
+    (ni ? `; ${ni} born at sea as ${ni === 1 ? 'an island' : 'islands'}` : '') + '.</p>';
   const big = meta.landmasses.filter(n => n >= 30).length;
   const small = meta.landmasses.length - big;
   const fused = meta.fused.map(g => g.map(id => map.plates[id].name.slice(-1)).join(' + '));
@@ -122,6 +126,7 @@ function renderReport() {
     `<p>Land ${meta.landPct.toFixed(1)}%, ocean ${(100 - meta.landPct).toFixed(1)}%.
      ${big} main landmasses${small ? `, ${small} small islands` : ''}.</p>
      <ul>${legend}</ul>
+     ${volcanoLine}
      <ul>${rows}</ul>` +
     (fused.length ? `<p>Collided and fused: ${fused.join('; ')}.</p>` : '');
 }

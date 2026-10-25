@@ -2,7 +2,8 @@
 // biomes, resources) become more typed arrays alongside `terrain`.
 
 export const TERRAIN = [
-  { id: 0, name: 'Plain', color: '#a8bf86' },
+  { id: 0, name: 'Ocean', color: '#2d6f8e' },
+  { id: 1, name: 'Land',  color: '#a8bf86' },
 ];
 
 // Neighbor offsets for "odd-r" layout (odd rows shoved right by half a hex).
@@ -16,7 +17,10 @@ export class WorldMap {
     this.cols = cols;
     this.rows = rows;
     this.size = cols * rows;
-    this.terrain = new Uint8Array(this.size); // all 0 = Plain
+    this.terrain = new Uint8Array(this.size); // 0 = Ocean, 1 = Land
+    this.plate = new Uint8Array(this.size);   // plate id per tile (set by worldgen)
+    this.plates = [];                         // plate descriptions (set by worldgen)
+    this.field = new Float32Array(this.size); // raw height-like value, reused for elevation later
   }
 
   index(col, row) { return row * this.cols + this.wrapCol(col); }

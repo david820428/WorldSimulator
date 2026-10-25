@@ -18,8 +18,8 @@ export const TEMPERATURE_DEFAULTS = {
   currentWarming: 8,         // °C added on the coast itself
   currentLat: [40, 80],      // |latitude| band where the current acts at full strength
   currentEdge: 5,            // degrees over which it fades in below / out above that band
-  currentInland: 8,          // how far west the code looks for the sea = how many tiles inland it reaches, fading each tile
-  currentDeepReach: 3,       // deep ocean must lie within this many tiles beyond the coast
+  currentInland: 3,          // tiles it reaches inland from the west coast, fading each tile
+  currentDeepReach: 8,       // how far west of the coast to look for deep ocean (tiles)
 };
 
 const rad = (deg) => deg * Math.PI / 180;
@@ -66,11 +66,13 @@ export function applyTemperature(map, opts = {}) {
     let t = rowTemp[row] - p.lapse * p.heightKm[map.terrain[i]];
 
     if (band[row] > 0 && isLand(i)) {
-      // d = how many tiles west to the sea (1 = coast tile). Beyond `currentInland`, no effect.
+      // d = how many tiles west to the sea (1 = coast tile). The warmth only reaches `currentInland`
+      // tiles, so there is no point looking further than that for the coast itself.
       let d = 0;
       for (let k = 1; k <= p.currentInland; k++) if (isOcean(at(row, col - k))) { d = k; break; }
       if (d) {
-        // Is there DEEP ocean out to the west, past the coastal shelf? Stop at any land.
+        // Is there DEEP ocean out to the west, past the coastal shelf? Look up to `currentDeepReach`
+        // tiles beyond the coast tile, through open sea only (any land in the way blocks the current).
         let deep = false;
         for (let k = d; k <= d + p.currentDeepReach; k++) {
           const j = at(row, col - k);

@@ -98,7 +98,7 @@ function paint() {
   const cols = view.colors;
   for (let i = 0; i < map.size; i++) {
     if (mode === 'land') { cols[i] = TERRAIN[map.terrain[i]].color; continue; }
-    const p = map.plates[map.plate[i]], land = map.terrain[i] === 1;
+    const p = map.plates[map.plate[i]], land = TERRAIN[map.terrain[i]].land;
     cols[i] = p.type === 'continental'
       ? `hsl(${hue(p.id)} 60% ${land ? 58 : 34}%)`
       : `hsl(${hue(p.id)} 22% ${land ? 50 : 24}%)`;
@@ -112,12 +112,16 @@ function renderReport() {
     const sw = `<i style="background:hsl(${hue(p.id)} 60% 58%)"></i>`;
     return `<li>${sw}${p.name}, ${p.orientation}, ${meta.landByPlate[p.id]} land tiles</li>`;
   }).join('');
+  const legend = [4, 3, 2, 1, 0].map(id =>
+    `<li><i style="background:${TERRAIN[id].color}"></i>${TERRAIN[id].name}, ${meta.elevation[id]} tiles${
+      id === 4 ? ' (impassable)' : id === 0 ? ' (not navigable yet)' : ''}</li>`).join('');
   const big = meta.landmasses.filter(n => n >= 30).length;
   const small = meta.landmasses.length - big;
   const fused = meta.fused.map(g => g.map(id => map.plates[id].name.slice(-1)).join(' + '));
   report.innerHTML =
     `<p>Land ${meta.landPct.toFixed(1)}%, ocean ${(100 - meta.landPct).toFixed(1)}%.
      ${big} main landmasses${small ? `, ${small} small islands` : ''}.</p>
+     <ul>${legend}</ul>
      <ul>${rows}</ul>` +
     (fused.length ? `<p>Collided and fused: ${fused.join('; ')}.</p>` : '');
 }

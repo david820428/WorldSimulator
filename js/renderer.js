@@ -103,6 +103,21 @@ export class Renderer {
     ctx.closePath();
   }
 
+  // A dark cone with a glowing crater.
+  drawVolcano(cx, cy) {
+    const ctx = this.ctx, s = HEX_SIZE;
+    ctx.beginPath();
+    ctx.moveTo(cx - 0.50 * s, cy + 0.34 * s); ctx.lineTo(cx - 0.12 * s, cy - 0.38 * s);
+    ctx.lineTo(cx + 0.12 * s, cy - 0.38 * s); ctx.lineTo(cx + 0.50 * s, cy + 0.34 * s);
+    ctx.closePath();
+    ctx.fillStyle = '#4a3a35'; ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx - 0.12 * s, cy - 0.38 * s); ctx.lineTo(cx + 0.12 * s, cy - 0.38 * s);
+    ctx.lineTo(cx + 0.21 * s, cy - 0.17 * s); ctx.lineTo(cx - 0.21 * s, cy - 0.17 * s);
+    ctx.closePath();
+    ctx.fillStyle = '#f0662a'; ctx.fill();
+  }
+
   draw() {
     const { ctx, cam, map, hexW } = this;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -126,12 +141,15 @@ export class Renderer {
     for (let row = r0; row <= r1; row++) {
       const offset = (row & 1) * 0.5;
       for (let c = c0; c <= c1; c++) {
-        const color = this.colors[map.index(c, row)];
+        const idx = map.index(c, row);
+        const color = this.colors[idx];
+        const cx = hexW * (c + offset), cy = rowH * row;
         ctx.fillStyle = color;
         ctx.strokeStyle = outline ? gridColor : color;   // far out, hide hairline gaps
-        this.hexPath(hexW * (c + offset), rowH * row);
+        this.hexPath(cx, cy);
         ctx.fill();
         ctx.stroke();
+        if (map.feature[idx] === 1) this.drawVolcano(cx, cy);
       }
     }
 

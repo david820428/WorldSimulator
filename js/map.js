@@ -17,6 +17,12 @@ const DIRS = [
   [[+1, 0], [+1, -1], [0, -1], [-1, 0], [0, +1], [+1, +1]], // odd rows
 ];
 
+// Features sit on top of terrain (a volcano on a plain is still a plain).
+export const FEATURES = [
+  { id: 0, name: 'None' },
+  { id: 1, name: 'Volcano' },
+];
+
 export class WorldMap {
   constructor(cols = 80, rows = 50) {
     this.cols = cols;
@@ -25,6 +31,8 @@ export class WorldMap {
     this.terrain = new Uint8Array(this.size); // index into TERRAIN
     this.plate = new Uint8Array(this.size);   // plate id per tile (set by worldgen)
     this.plates = [];                         // plate descriptions (set by worldgen)
+    this.feature = new Uint8Array(this.size); // index into FEATURES
+    this.volcanic = new Float32Array(this.size); // volcanic potential near plate borders (0..1)
     this.uplift = new Float32Array(this.size); // mountain-building strength from plate collisions
     this.field = new Float32Array(this.size); // raw height-like value, reused for elevation later
   }

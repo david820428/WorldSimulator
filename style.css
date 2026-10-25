@@ -1,0 +1,36 @@
+:root {
+  --void: #0e2230;
+  --panel: rgba(14, 34, 48, 0.82);
+  --line: rgba(220, 235, 225, 0.18);
+  --text: #e8efe6;
+  --muted: #98aeb0;
+  --accent: #e3c16f;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--void); }
+body { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text); }
+
+#map { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
+       cursor: grab; touch-action: none; }
+#map.dragging { cursor: grabbing; }
+
+.panel { position: fixed; background: var(--panel); border: 1px solid var(--line);
+         border-radius: 6px; backdrop-filter: blur(6px); }
+.top { top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; padding: 10px 14px; }
+.top h1 { margin: 0; font: 600 17px/1.2 Georgia, "Times New Roman", serif; letter-spacing: .01em; }
+.top p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+
+.zoom { top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; display: flex; overflow: hidden; }
+.zoom button { background: none; border: 0; color: var(--text); font: inherit; font-size: 16px;
+               padding: 8px 14px; cursor: pointer; }
+.zoom button + button { border-left: 1px solid var(--line); }
+.zoom button:hover { background: rgba(255,255,255,.08); }
+.zoom button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+#reset { font-size: 13px; }
+
+.bottom { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+          padding: 8px 14px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.hint { color: var(--muted); }
+#tile-info { font-variant-numeric: tabular-nums; }
+
+@media (max-width: 560px) { .hint { display: none; } }

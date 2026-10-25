@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>World Simulator</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="map" aria-label="World map"></canvas>
+
+  <header class="panel top">
+    <h1>World Simulator</h1>
+    <p id="stats">80 × 50 tiles, wraps east–west</p>
+  </header>
+
+  <div class="panel zoom" role="group" aria-label="Zoom">
+    <button id="zoom-in" aria-label="Zoom in">+</button>
+    <button id="zoom-out" aria-label="Zoom out">−</button>
+    <button id="reset" aria-label="Reset view">Reset</button>
+  </div>
+
+  <footer class="panel bottom">
+    <span id="tile-info">Hover over a tile</span>
+    <span class="hint">Drag or arrow keys to scroll. Wheel, pinch or +/− to zoom.</span>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

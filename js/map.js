@@ -9,6 +9,7 @@ export const TERRAIN = [
   { id: 2, name: 'Lowland',     color: '#a8bf86', land: true,  walkable: true,  sailable: false },
   { id: 3, name: 'Hills',       color: '#c2ae6c', land: true,  walkable: true,  sailable: false },
   { id: 4, name: 'Mountains',   color: '#837f7a', land: true,  walkable: false, sailable: false },
+  { id: 5, name: 'Lake',        color: '#66bad8', land: false, walkable: false, sailable: false, freshwater: true },
 ];
 
 // Neighbor offsets for "odd-r" layout (odd rows shoved right by half a hex).
@@ -43,6 +44,13 @@ export class WorldMap {
 
   // Columns wrap east-west; rows do not wrap.
   wrapCol(col) { return ((col % this.cols) + this.cols) % this.cols; }
+
+  // One step in hex direction 0..5 (E, NE, NW, W, SW, SE). Returns a tile index, or -1 off the map.
+  step(col, row, dir) {
+    const [dc, dr] = DIRS[row & 1][dir];
+    const r = row + dr;
+    return this.inBounds(r) ? r * this.cols + this.wrapCol(col + dc) : -1;
+  }
 
   inBounds(row) { return row >= 0 && row < this.rows; }
 

@@ -1,5 +1,6 @@
 import { WorldMap, TERRAIN } from './map.js';
 import { Renderer } from './renderer.js';
+import { generateWorld } from './worldgen.js';
 
 const canvas = document.getElementById('map');
 const info = document.getElementById('tile-info');
@@ -15,7 +16,7 @@ function setHover(px, py) {
   const same = t && view.hover && t.c === view.hover.c && t.row === view.hover.row;
   if (!same) { view.hover = t; view.dirty = true; }
   info.textContent = t
-    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name}`
+    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}`
     : 'Hover over a tile';
 }
 
@@ -85,6 +86,60 @@ document.getElementById('zoom-out').onclick = () => view.zoomAt(...center(), 1 /
 document.getElementById('reset').onclick = () => view.reset();
 
 window.addEventListener('resize', () => view.resize());
+
+// ---- world generation UI ----
+const seedInput = document.getElementById('seed');
+const report = document.getElementById('report');
+let meta = null, mode = 'land';
+
+const hue = (id) => (id * 137.5) % 360;           // golden-angle hues: neighbours differ
+
+function paint() {
+  const cols = view.colors;
+  for (let i = 0; i < map.size; i++) {
+    if (mode === 'land') { cols[i] = TERRAIN[map.terrain[i]].color; continue; }
+    const p = map.plates[map.plate[i]], land = map.terrain[i] === 1;
+    cols[i] = p.type === 'continental'
+      ? `hsl(${hue(p.id)} 60% ${land ? 58 : 34}%)`
+      : `hsl(${hue(p.id)} 22% ${land ? 50 : 24}%)`;
+  }
+  view.dirty = true;
+}
+
+function renderReport() {
+  const conts = map.plates.filter(p => p.type === 'continental');
+  const rows = conts.map(p => {
+    const sw = `<i style="background:hsl(${hue(p.id)} 60% 58%)"></i>`;
+    return `<li>${sw}${p.name}, ${p.orientation}, ${meta.landByPlate[p.id]} land tiles</li>`;
+  }).join('');
+  const big = meta.landmasses.filter(n => n >= 30).length;
+  const small = meta.landmasses.length - big;
+  const fused = meta.fused.map(g => g.map(id => map.plates[id].name.slice(-1)).join(' + '));
+  report.innerHTML =
+    `<p>Land ${meta.landPct.toFixed(1)}%, ocean ${(100 - meta.landPct).toFixed(1)}%.
+     ${big} main landmasses${small ? `, ${small} small islands` : ''}.</p>
+     <ul>${rows}</ul>` +
+    (fused.length ? `<p>Collided and fused: ${fused.join('; ')}.</p>` : '');
+}
+
+function generate(seed) {
+  seed = String(seed).trim() || 'earth';
+  seedInput.value = seed;
+  meta = generateWorld(map, seed);
+  history.replaceState(null, '', '#' + encodeURIComponent(seed));
+  paint(); renderReport();
+}
+
+document.getElementById('seed-form').addEventListener('submit', (e) => { e.preventDefault(); generate(seedInput.value); });
+document.getElementById('dice').onclick = () => generate(Math.random().toString(36).slice(2, 8));
+for (const b of document.querySelectorAll('[data-mode]')) {
+  b.onclick = () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    paint();
+  };
+}
+generate(decodeURIComponent(location.hash.slice(1)) || 'earth');
 
 // ---- main loop: redraw only when something changed ----
 let last = performance.now();

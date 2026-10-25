@@ -18,6 +18,19 @@ const DIRS = [
   [[+1, 0], [+1, -1], [0, -1], [-1, 0], [0, +1], [+1, +1]], // odd rows
 ];
 
+// Biomes exist on land tiles only (lowland, hills, mountains). id 0 = none (sea, lakes).
+export const BIOMES = [
+  { id: 0, name: 'None',                color: null },
+  { id: 1, name: 'Tropical rainforest', color: '#2f7d3a' },
+  { id: 2, name: 'Savannah',            color: '#c9b44e' },
+  { id: 3, name: 'Tropical desert',     color: '#e6c36f' },
+  { id: 4, name: 'Temperate forest',    color: '#58a14c' },
+  { id: 5, name: 'Grassland',           color: '#a9cb6a' },
+  { id: 6, name: 'Temperate desert',    color: '#c4ad8a' },
+  { id: 7, name: 'Boreal forest',       color: '#3b6e5c' },
+  { id: 8, name: 'Tundra',              color: '#b9c9c6' },
+];
+
 // Features sit on top of terrain (a volcano on a plain is still a plain).
 export const FEATURES = [
   { id: 0, name: 'None' },
@@ -34,6 +47,7 @@ export class WorldMap {
     this.plates = [];                         // plate descriptions (set by worldgen)
     this.temperature = new Float32Array(this.size); // annual mean °C
     this.precipitation = new Float32Array(this.size); // annual mm (land tiles)
+    this.biome = new Uint8Array(this.size);   // index into BIOMES (0 on water)
     this.feature = new Uint8Array(this.size); // index into FEATURES
     this.volcanic = new Float32Array(this.size); // volcanic potential near plate borders (0..1)
     this.uplift = new Float32Array(this.size); // mountain-building strength from plate collisions

@@ -18,7 +18,7 @@ export const TEMPERATURE_DEFAULTS = {
   currentWarming: 8,         // °C added on the coast itself
   currentLat: [40, 80],      // |latitude| band where the current acts at full strength
   currentEdge: 5,            // degrees over which it fades in below / out above that band
-  currentInland: 3,          // tiles it reaches inland, fading each tile
+  currentInland: 8,          // how far west the code looks for the sea = how many tiles inland it reaches, fading each tile
   currentDeepReach: 3,       // deep ocean must lie within this many tiles beyond the coast
 };
 

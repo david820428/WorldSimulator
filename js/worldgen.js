@@ -1,6 +1,8 @@
 // Layer 1: tectonic plates -> land and ocean.  See the README for the reasoning.
 import { mulberry32, hashSeed, Noise } from './random.js';
 import { applyElevation } from './elevation.js';
+import { applyVolcanoes } from './volcanoes.js';
+import { TERRAIN } from './map.js';
 
 const ROW = Math.sqrt(3) / 2;       // row spacing relative to tile width
 
@@ -159,6 +161,11 @@ export function generateWorld(map, seed, opts = {}) {
   for (let i = 0; i < N; i++) map.terrain[i] = land[i];
   map.plate = plateOf; map.plates = plates; map.field = field;
   const elevation = applyElevation(map, noise);   // layer 2: turns 0/1 into 5 levels
+  map.feature.fill(0);
+  const volcanoes = applyVolcanoes(map, rng);     // layer 3: volcanoes (sea ones add small islands)
+  for (let i = 0; i < N; i++) land[i] = TERRAIN[map.terrain[i]].land ? 1 : 0;   // islands count as land
+  const levels = [0, 0, 0, 0, 0];
+  for (let i = 0; i < N; i++) levels[map.terrain[i]]++;
 
   const { labels, sizes } = components(map, land, 1);
   const landTiles = land.reduce((s, v) => s + v, 0);
@@ -179,7 +186,7 @@ export function generateWorld(map, seed, opts = {}) {
   });
 
   return {
-    seed, landPct: landTiles / N * 100, elevation,
+    seed, landPct: landTiles / N * 100, elevation: levels, volcanoes,
     landmasses: sizes.filter(Boolean).sort((a, b) => b - a),
     landByPlate,
     fused: [...groups.values()].filter(g => g.length > 1),

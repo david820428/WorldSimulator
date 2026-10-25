@@ -12,6 +12,17 @@
   <header class="panel top">
     <h1>World Simulator</h1>
     <p id="stats">80 × 50 tiles, wraps east–west</p>
+    <form id="seed-form">
+      <label for="seed">Seed</label>
+      <input id="seed" type="text" autocomplete="off" spellcheck="false">
+      <button type="submit">Generate</button>
+      <button type="button" id="dice">Random</button>
+    </form>
+    <div class="modes" role="group" aria-label="Map view">
+      <button data-mode="land" aria-pressed="true">Land and sea</button>
+      <button data-mode="plates" aria-pressed="false">Plates</button>
+    </div>
+    <div id="report"></div>
   </header>
 
   <div class="panel zoom" role="group" aria-label="Zoom">

@@ -1,7 +1,8 @@
 # World Simulator
 
 A hex-map world simulator inspired by *Guns, Germs, and Steel*.
-Stage 1: 4,000 plain hex tiles (80 × 50), wrapping east–west, with zoom and scroll.
+Stage 1: 4,000 hex tiles (80 × 50), wrapping east–west, with zoom and scroll.
+Stage 2: tectonic plates produce 5 continents and a 30% land / 70% ocean split, from a seed.
 
 ## Run locally
 Browsers block ES modules over `file://`, so use a tiny local server:
@@ -20,3 +21,8 @@ then open http://localhost:8000
 - `js/map.js` world data (tile arrays, wrapping, neighbors). No rendering code.
 - `js/renderer.js` canvas drawing, camera, zoom, tile picking.
 - `js/main.js` input handling (drag, wheel, pinch, keyboard) and the render loop.
+- `js/random.js` seeded random numbers and east-west tileable noise.
+- `js/worldgen.js` layer 1: plates -> land and ocean. All tuning numbers are in `DEFAULTS` at the top.
+
+## Sharing a world
+The seed is stored in the page address (`#myseed`), so copying the URL shares the exact same world.

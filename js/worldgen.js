@@ -1,5 +1,6 @@
 // Layer 1: tectonic plates -> land and ocean.  See the README for the reasoning.
 import { mulberry32, hashSeed, Noise } from './random.js';
+import { applyElevation } from './elevation.js';
 
 const ROW = Math.sqrt(3) / 2;       // row spacing relative to tile width
 
@@ -61,6 +62,24 @@ export function generateWorld(map, seed, opts = {}) {
   const collide = new Set();
   for (let i = 0; i < o.continents; i++)
     for (let j = i + 1; j < o.continents; j++) if (rng() < o.collideChance) collide.add(i * 64 + j);
+  for (const p of plates) p.collidesWith = [];
+  for (const key of collide) {
+    const i = Math.floor(key / 64), j = key % 64;
+    plates[i].collidesWith.push(j); plates[j].collidesWith.push(i);
+  }
+
+  // Plate motion. Every plate drifts in a random direction; colliding pairs head
+  // straight at each other. This decides which borders push, pull or slide.
+  for (const p of plates) {
+    const ang = rng() * Math.PI * 2, sp = 0.6 + 0.4 * rng();
+    p.vx = Math.cos(ang) * sp; p.vy = Math.sin(ang) * sp;
+  }
+  for (const key of collide) {
+    const a = plates[Math.floor(key / 64)], b = plates[key % 64];
+    let dx = b.x - a.x; dx -= W * Math.round(dx / W);          // shortest way round the world
+    let dy = b.y - a.y; const L = Math.hypot(dx, dy) || 1;
+    a.vx = dx / L * 0.9; a.vy = dy / L * 0.9; b.vx = -a.vx; b.vy = -a.vy;
+  }
   const colliding = (a, b) => collide.has(Math.min(a, b) * 64 + Math.max(a, b));
 
   // ---- 2. Give every tile to a plate (warped, stretched Voronoi) -----------
@@ -139,6 +158,7 @@ export function generateWorld(map, seed, opts = {}) {
   // ---- 6. Write results and report ----------------------------------------
   for (let i = 0; i < N; i++) map.terrain[i] = land[i];
   map.plate = plateOf; map.plates = plates; map.field = field;
+  const elevation = applyElevation(map, noise);   // layer 2: turns 0/1 into 5 levels
 
   const { labels, sizes } = components(map, land, 1);
   const landTiles = land.reduce((s, v) => s + v, 0);
@@ -159,7 +179,7 @@ export function generateWorld(map, seed, opts = {}) {
   });
 
   return {
-    seed, landPct: landTiles / N * 100,
+    seed, landPct: landTiles / N * 100, elevation,
     landmasses: sizes.filter(Boolean).sort((a, b) => b - a),
     landByPlate,
     fused: [...groups.values()].filter(g => g.length > 1),

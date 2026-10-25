@@ -2,6 +2,7 @@
 import { mulberry32, hashSeed, Noise } from './random.js';
 import { applyElevation } from './elevation.js';
 import { applyVolcanoes } from './volcanoes.js';
+import { applyTemperature } from './temperature.js';
 import { TERRAIN } from './map.js';
 
 const ROW = Math.sqrt(3) / 2;       // row spacing relative to tile width
@@ -164,6 +165,7 @@ export function generateWorld(map, seed, opts = {}) {
   map.feature.fill(0);
   const volcanoes = applyVolcanoes(map, rng);     // layer 3: volcanoes (sea ones add small islands)
   for (let i = 0; i < N; i++) land[i] = TERRAIN[map.terrain[i]].land ? 1 : 0;   // islands count as land
+  const temperature = applyTemperature(map);      // layer 4: latitude + height
   const levels = [0, 0, 0, 0, 0];
   for (let i = 0; i < N; i++) levels[map.terrain[i]]++;
 
@@ -186,7 +188,7 @@ export function generateWorld(map, seed, opts = {}) {
   });
 
   return {
-    seed, landPct: landTiles / N * 100, elevation: levels, volcanoes,
+    seed, landPct: landTiles / N * 100, elevation: levels, volcanoes, temperature,
     landmasses: sizes.filter(Boolean).sort((a, b) => b - a),
     landByPlate,
     fused: [...groups.values()].filter(g => g.length > 1),

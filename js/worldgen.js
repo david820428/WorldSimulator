@@ -1,6 +1,7 @@
 // Layer 1: tectonic plates -> land and ocean.  See the README for the reasoning.
 import { mulberry32, hashSeed, Noise } from './random.js';
 import { applyElevation } from './elevation.js';
+import { applyRelief } from './relief.js';
 import { applyVolcanoes } from './volcanoes.js';
 import { applyTemperature } from './temperature.js';
 import { applyPrecipitation } from './precipitation.js';
@@ -163,12 +164,14 @@ export function generateWorld(map, seed, opts = {}) {
   for (let i = 0; i < N; i++) map.terrain[i] = land[i];
   map.plate = plateOf; map.plates = plates; map.field = field;
   const elevation = applyElevation(map, noise);   // layer 2: turns 0/1 into 5 levels
+  // Relief noise has its own random stream, so it never shifts the layers around it.
+  const relief = applyRelief(map, noise, mulberry32(hashSeed(String(seed) + ':relief')));
   map.feature.fill(0);
   const volcanoes = applyVolcanoes(map, rng);     // layer 3: volcanoes (sea ones add small islands)
   for (let i = 0; i < N; i++) land[i] = TERRAIN[map.terrain[i]].land ? 1 : 0;   // islands count as land
   const temperature = applyTemperature(map);      // layer 4: latitude + height
   const precipitation = applyPrecipitation(map);  // layer 5: wind, mountains, sea distance
-  const levels = [0, 0, 0, 0, 0];
+  const levels = new Array(TERRAIN.length).fill(0);
   for (let i = 0; i < N; i++) levels[map.terrain[i]]++;
 
   const { labels, sizes } = components(map, land, 1);
@@ -190,7 +193,7 @@ export function generateWorld(map, seed, opts = {}) {
   });
 
   return {
-    seed, landPct: landTiles / N * 100, elevation: levels, volcanoes, temperature, precipitation,
+    seed, landPct: landTiles / N * 100, elevation: levels, volcanoes, relief, temperature, precipitation,
     landmasses: sizes.filter(Boolean).sort((a, b) => b - a),
     landByPlate,
     fused: [...groups.values()].filter(g => g.length > 1),

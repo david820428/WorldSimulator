@@ -7,8 +7,8 @@ export const TEMPERATURE_DEFAULTS = {
   pole: -25,        // °C at the poles
   tilt: 23.44,      // axial tilt in degrees = latitude of the tropics
   lapse: 6.5,       // °C lost per km of height
-  // Representative height (km) of each terrain level: deep, shallow, lowland, hills, mountains
-  heightKm: [0, 0, 0, 0.6, 2.0],
+  // Representative height (km) of each terrain: deep, shallow, lowland, hills, mountains, lake
+  heightKm: [0, 0, 0, 0.6, 2.0, 0],
 };
 
 const rad = (deg) => deg * Math.PI / 180;

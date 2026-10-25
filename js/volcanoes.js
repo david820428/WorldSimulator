@@ -2,6 +2,8 @@
 // Volcanoes are a *feature* (map.feature), not a terrain type, so a volcano sitting
 // on a plain stays a plain. The only terrain change: a volcano born at sea builds an island.
 
+import { TERRAIN } from './map.js';
+
 const SHALLOW = 1, LOW = 2, MOUNTAINS = 4;
 const ROW = Math.sqrt(3) / 2;
 
@@ -18,7 +20,7 @@ export const VOLCANO_DEFAULTS = {
 export function applyVolcanoes(map, rng, opts = {}) {
   const o = { ...VOLCANO_DEFAULTS, ...opts };
   const N = map.size, W = map.cols;
-  const isLand = (i) => map.terrain[i] >= 2;
+  const isLand = (i) => TERRAIN[map.terrain[i]].land;     // lakes are water, not land
   const nbrs = (i) => map.neighbors(i % W, (i / W) | 0).map(([c, r]) => r * W + c);
   const wrapSigned = (d) => d - W * Math.round(d / W);
   const px = (i) => (i % W) + 0.5 * (((i / W) | 0) & 1);

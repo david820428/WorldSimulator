@@ -11,7 +11,7 @@ const ROW = Math.sqrt(3) / 2;
 export const RIVER_DEFAULTS = {
   continentMinTiles: 30,    // a landmass at least this big is a continent (smaller = island)
   minPerContinent: 2,
-  maxTotal: 20,             // hard cap for the whole world
+  maxTotal: 30,             // hard cap for the whole world
   minLength: 3,             // tiles per river (relaxed only if a continent cannot fit its minimum)
   sourceSpacing: 4,         // tiles between two river sources
   meander: 0.3,             // chance weight of a sideways step instead of a step toward the sea
@@ -61,11 +61,11 @@ export function applyRivers(map, rng, opts = {}) {
     }
   }
 
-  // ---- 3. How many rivers? Random, at least 2 per continent, at most 20 in all ----
+  // ---- 3. How many rivers? Random, at least 2 per continent, at most 30 in all ----
   const C = continents.length;
   const base = Math.min(o.minPerContinent, Math.floor(o.maxTotal / C));
   const room = o.maxTotal - base * C;
-  const extra = Math.floor(rng() * (Math.min(room, 2 * C + 4) + 1));
+  const extra = Math.floor(rng() * (room + 1));         // anywhere from none up to the world cap
   const quota = new Array(C).fill(base);
   const totalSize = continents.reduce((a, c) => a + c.tiles.length, 0);
   for (let e = 0; e < extra; e++) {                       // bigger continents attract more extras

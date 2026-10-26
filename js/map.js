@@ -48,6 +48,8 @@ export class WorldMap {
     this.temperature = new Float32Array(this.size); // annual mean °C
     this.precipitation = new Float32Array(this.size); // annual mm (land tiles)
     this.biome = new Uint8Array(this.size);   // index into BIOMES (0 on water)
+    this.river = new Uint8Array(this.size);   // river number on this tile (0 = none)
+    this.riverTo = new Int16Array(this.size).fill(-1); // next tile downstream (-1 = mouth at the sea)
     this.feature = new Uint8Array(this.size); // index into FEATURES
     this.volcanic = new Float32Array(this.size); // volcanic potential near plate borders (0..1)
     this.uplift = new Float32Array(this.size); // mountain-building strength from plate collisions

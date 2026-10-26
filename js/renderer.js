@@ -103,6 +103,19 @@ export class Renderer {
     ctx.closePath();
   }
 
+  // A blue S-shaped stream with a pale edge so it reads on any terrain colour.
+  drawRiver(cx, cy) {
+    const ctx = this.ctx, s = HEX_SIZE;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - 0.16 * s, cy - 0.52 * s);
+    ctx.bezierCurveTo(cx + 0.58 * s, cy - 0.26 * s, cx - 0.58 * s, cy + 0.26 * s, cx + 0.16 * s, cy + 0.52 * s);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ctx.lineWidth = 0.27 * s; ctx.stroke();
+    ctx.strokeStyle = '#2a7fc4'; ctx.lineWidth = 0.15 * s; ctx.stroke();
+    ctx.restore();
+  }
+
   // A dark cone with a glowing crater.
   drawVolcano(cx, cy) {
     const ctx = this.ctx, s = HEX_SIZE;
@@ -149,6 +162,7 @@ export class Renderer {
         this.hexPath(cx, cy);
         ctx.fill();
         ctx.stroke();
+        if (map.river[idx]) this.drawRiver(cx, cy);
         if (map.feature[idx] === 1) this.drawVolcano(cx, cy);
       }
     }

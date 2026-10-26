@@ -6,6 +6,7 @@ import { applyVolcanoes } from './volcanoes.js';
 import { applyTemperature } from './temperature.js';
 import { applyPrecipitation } from './precipitation.js';
 import { applyBiomes } from './biomes.js';
+import { applyRivers } from './rivers.js';
 import { TERRAIN } from './map.js';
 
 const ROW = Math.sqrt(3) / 2;       // row spacing relative to tile width
@@ -173,6 +174,7 @@ export function generateWorld(map, seed, opts = {}) {
   const temperature = applyTemperature(map);      // layer 4: latitude + height
   const precipitation = applyPrecipitation(map);  // layer 5: wind, mountains, sea distance
   const biomes = applyBiomes(map);                // layer 6: from temperature + rainfall only
+  const rivers = applyRivers(map, mulberry32(hashSeed(String(seed) + ':rivers')));   // layer 7
   const levels = new Array(TERRAIN.length).fill(0);
   for (let i = 0; i < N; i++) levels[map.terrain[i]]++;
 
@@ -195,7 +197,7 @@ export function generateWorld(map, seed, opts = {}) {
   });
 
   return {
-    seed, landPct: landTiles / N * 100, elevation: levels, volcanoes, relief, temperature, precipitation, biomes,
+    seed, landPct: landTiles / N * 100, elevation: levels, volcanoes, relief, temperature, precipitation, biomes, rivers,
     landmasses: sizes.filter(Boolean).sort((a, b) => b - a),
     landByPlate,
     fused: [...groups.values()].filter(g => g.length > 1),

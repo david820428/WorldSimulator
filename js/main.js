@@ -12,13 +12,14 @@ document.getElementById('stats').textContent =
 
 // ---- hover ----
 const biomeText = (i) => map.biome[i] ? ` · ${BIOMES[map.biome[i]].name}` : '';
+const riverText = (i) => map.river[i] ? ' · River' : '';
 const rainText = (i) => TERRAIN[map.terrain[i]].land ? ` · ${Math.round(map.precipitation[i])} mm` : '';
 function setHover(px, py) {
   const t = view.pickTile(px, py);
   const same = t && view.hover && t.c === view.hover.c && t.row === view.hover.row;
   if (!same) { view.hover = t; view.dirty = true; }
   info.textContent = t
-    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))}${biomeText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
+    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))}${biomeText(map.index(t.col, t.row))}${riverText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
     : 'Hover over a tile';
 }
 
@@ -161,6 +162,8 @@ function renderReport() {
   const rainLine = `<p>Land rainfall: ${Math.round(pr.min)} to ${Math.round(pr.max)} mm a year, average ${Math.round(pr.mean)} mm.</p>`;
   const biomeList = BIOMES.slice(1).map(b =>
     `<li><i style="background:${b.color}"></i>${b.name}, ${meta.biomes[b.id]} tiles</li>`).join('');
+  const rv = meta.rivers;
+  const riverLine = `<p>${rv.count} rivers (${rv.tiles} tiles) on ${rv.perContinent.length} continents: ${rv.perContinent.map(c => c.count).join(', ')} each.</p>`;
   const rl = meta.relief;
   const reliefLine = `<p>Extra relief: ${rl.mountainRanges} mountain ranges, ${rl.hillRanges} hill ranges, ${rl.basins} basins, ${rl.lakes} lakes, ${rl.islands} islands.</p>`;
   const v = meta.volcanoes;
@@ -176,6 +179,7 @@ function renderReport() {
      <ul>${legend}</ul>
      ${reliefLine}
      ${volcanoLine}
+     ${riverLine}
      ${tempLine}
      ${rainLine}
      <ul>${biomeList}</ul>

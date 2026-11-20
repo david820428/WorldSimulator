@@ -103,7 +103,7 @@ export class Renderer {
     ctx.closePath();
   }
 
-  // Round badge for crops (golden grain ear) and livestock (paw print), drawn at an offset
+  // Round badge: crop (golden grain ear), livestock (paw print), deposit (pickaxe), at an offset
   // from the tile centre (dx, dy in hex radii) and scaled by k.
   drawBadge(kind, cx, cy, dx, dy, k) {
     const ctx = this.ctx, s = HEX_SIZE;
@@ -111,7 +111,9 @@ export class Renderer {
     ctx.translate(cx + dx * s, cy + dy * s);
     ctx.scale(k, k);
     ctx.beginPath(); ctx.arc(0, 0, 0.46 * s, 0, Math.PI * 2);
-    ctx.fillStyle = kind === 'crop' ? 'rgba(255, 248, 224, 0.9)' : 'rgba(236, 243, 255, 0.92)'; ctx.fill();
+    ctx.fillStyle = kind === 'crop' ? 'rgba(255, 248, 224, 0.9)'
+      : kind === 'livestock' ? 'rgba(236, 243, 255, 0.92)' : 'rgba(232, 235, 240, 0.93)';
+    ctx.fill();
     ctx.lineWidth = 0.04 * s; ctx.strokeStyle = 'rgba(110, 80, 20, 0.75)'; ctx.stroke();
     ctx.lineCap = 'round';
     if (kind === 'crop') {
@@ -127,6 +129,12 @@ export class Renderer {
       }
       ctx.beginPath(); ctx.ellipse(0, -0.33 * s, 0.06 * s, 0.11 * s, 0, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
+    } else if (kind === 'geo') {
+      ctx.beginPath(); ctx.moveTo(-0.24 * s, 0.32 * s); ctx.lineTo(0.19 * s, -0.27 * s);   // pickaxe handle
+      ctx.lineWidth = 0.07 * s; ctx.strokeStyle = '#7a5230'; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.14 * s, -0.30 * s);                                   // pickaxe head
+      ctx.quadraticCurveTo(0.26 * s, -0.42 * s, 0.36 * s, 0.04 * s);
+      ctx.lineWidth = 0.1 * s; ctx.strokeStyle = '#59616b'; ctx.stroke();
     } else {
       ctx.fillStyle = '#6b4a2f';                                                   // paw print
       ctx.beginPath(); ctx.ellipse(0, 0.13 * s, 0.2 * s, 0.16 * s, 0, 0, Math.PI * 2); ctx.fill();
@@ -196,20 +204,22 @@ export class Renderer {
         this.hexPath(cx, cy);
         ctx.fill();
         ctx.stroke();
-        // River and volcano take the tile centre. Crop and livestock icons become small
-        // badges so up to three icons fit on one tile.
+        // River and volcano take the tile centre. Crop, livestock and deposit icons become
+        // round badges: corners around a river/volcano, or shared out across a bare tile.
         const hasBase = map.river[idx] !== 0 || map.feature[idx] === 1;
-        const crop = map.crop[idx] !== 0, stock = map.livestock[idx] !== 0;
+        const badges = [];
+        if (map.crop[idx]) badges.push('crop');
+        if (map.livestock[idx]) badges.push('livestock');
+        if (map.geo[idx]) badges.push('geo');
         if (map.river[idx]) this.drawRiver(cx, cy);
         if (map.feature[idx] === 1) this.drawVolcano(cx, cy);
-        if (hasBase) {                                                    // corners under the base icon
-          if (crop) this.drawBadge('crop', cx, cy, 0.40, 0.40, 0.6);
-          if (stock) this.drawBadge('livestock', cx, cy, -0.40, 0.40, 0.6);
-        } else if (crop && stock) {                                       // side by side
-          this.drawBadge('crop', cx, cy, -0.34, 0, 0.72);
-          this.drawBadge('livestock', cx, cy, 0.34, 0, 0.72);
-        } else if (crop) this.drawBadge('crop', cx, cy, 0, 0, 1);
-        else if (stock) this.drawBadge('livestock', cx, cy, 0, 0, 1);
+        if (badges.length) {
+          const slots = hasBase ? [[0.40, 0.40, 0.58], [-0.40, 0.40, 0.58], [0.38, -0.38, 0.58]]
+            : badges.length === 1 ? [[0, 0, 1]]
+            : badges.length === 2 ? [[-0.34, 0, 0.72], [0.34, 0, 0.72]]
+            : [[0, -0.30, 0.62], [-0.36, 0.28, 0.62], [0.36, 0.28, 0.62]];
+          badges.forEach((kind, k) => this.drawBadge(kind, cx, cy, ...slots[k]));
+        }
       }
     }
 

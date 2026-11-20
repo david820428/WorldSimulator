@@ -1,8 +1,8 @@
 // Layer 8: crop resources. Crops come from biomes only (never from elevation or latitude).
 //
 // For each crop type (CROPS in map.js):
-//   candidates = land tiles of the crop's own biome that lie on a continent
-//                (not an island) and do not already hold a crop
+//   candidates = walkable land tiles (lowland or hills, never impassable mountains) of the
+//                crop's own biome that lie on a continent (not an island) and hold no crop yet
 //   pick ONE of them uniformly at random  ->  exactly one tile of that crop in the world
 //   no candidates?  ->  that crop is simply not generated this time
 // Because every pick is uniform over all candidates, a continent with more of a biome
@@ -37,7 +37,9 @@ export function applyCrops(map, rng, opts = {}) {
   const result = { placed: 0, total: CROPS.length - 1, missing: [], list: [], perContinent: continents.map(t => ({ size: t.length, count: 0 })) };
   for (const crop of CROPS.slice(1)) {
     const pool = [];
-    for (let i = 0; i < N; i++) if (map.biome[i] === crop.biome && contOf[i] >= 0 && !map.crop[i]) pool.push(i);
+    for (let i = 0; i < N; i++) {
+      if (map.biome[i] === crop.biome && contOf[i] >= 0 && !map.crop[i] && TERRAIN[map.terrain[i]].walkable) pool.push(i);
+    }
     if (!pool.length) { result.missing.push(crop.name); continue; }   // no such biome on a continent: give up
     const tile = pool[Math.floor(rng() * pool.length)];
     map.crop[tile] = crop.id;

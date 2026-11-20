@@ -46,6 +46,20 @@ export const CROPS = [{ name: 'None', biome: 0 },
   ...CROP_TABLE.flatMap(([biome, names]) => names.map(name => ({ name, biome })))]
   .map((c, id) => ({ ...c, id }));
 
+// Livestock: [biome id, animal names]. Same rule as crops: one tile per animal.
+const LIVESTOCK_TABLE = [
+  [1, ['Buffalo', 'Duck', 'Elephant']],                 // tropical rainforest
+  [2, ['Pig', 'Chicken', 'Turkey']],                    // savannah
+  [3, ['Camel']],                                       // tropical desert
+  [4, ['Goose', 'Cattle', 'Silkworm']],                 // temperate forest
+  [5, ['Horse', 'Sheep', 'Goat', 'Honeybee']],          // grassland
+  [6, ['Donkey']],                                      // temperate desert
+  [7, ['Alpaca', 'Reindeer']],                          // boreal forest
+];
+export const LIVESTOCK = [{ name: 'None', biome: 0 },
+  ...LIVESTOCK_TABLE.flatMap(([biome, names]) => names.map(name => ({ biome, name })))]
+  .map((c, id) => ({ ...c, id }));
+
 // Features sit on top of terrain (a volcano on a plain is still a plain).
 export const FEATURES = [
   { id: 0, name: 'None' },
@@ -65,6 +79,7 @@ export class WorldMap {
     this.biome = new Uint8Array(this.size);   // index into BIOMES (0 on water)
     this.river = new Uint8Array(this.size);   // river number on this tile (0 = none)
     this.riverTo = new Int16Array(this.size).fill(-1); // next tile downstream (-1 = mouth at the sea)
+    this.livestock = new Uint8Array(this.size); // index into LIVESTOCK (0 = none)
     this.crop = new Uint8Array(this.size);    // index into CROPS (0 = none)
     this.feature = new Uint8Array(this.size); // index into FEATURES
     this.volcanic = new Float32Array(this.size); // volcanic potential near plate borders (0..1)

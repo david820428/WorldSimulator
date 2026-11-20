@@ -103,28 +103,37 @@ export class Renderer {
     ctx.closePath();
   }
 
-  // One icon for every crop: a golden grain ear on a pale disc. `shared` shrinks it into a
-  // bottom-right badge so it fits on a tile that already shows a river or volcano.
-  drawCrop(cx, cy, shared) {
+  // Round badge for crops (golden grain ear) and livestock (paw print), drawn at an offset
+  // from the tile centre (dx, dy in hex radii) and scaled by k.
+  drawBadge(kind, cx, cy, dx, dy, k) {
     const ctx = this.ctx, s = HEX_SIZE;
     ctx.save();
-    if (shared) { ctx.translate(cx + 0.40 * s, cy + 0.40 * s); ctx.scale(0.6, 0.6); } else ctx.translate(cx, cy);
+    ctx.translate(cx + dx * s, cy + dy * s);
+    ctx.scale(k, k);
     ctx.beginPath(); ctx.arc(0, 0, 0.46 * s, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 248, 224, 0.9)'; ctx.fill();
+    ctx.fillStyle = kind === 'crop' ? 'rgba(255, 248, 224, 0.9)' : 'rgba(236, 243, 255, 0.92)'; ctx.fill();
     ctx.lineWidth = 0.04 * s; ctx.strokeStyle = 'rgba(110, 80, 20, 0.75)'; ctx.stroke();
     ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(0, 0.34 * s); ctx.lineTo(0, -0.28 * s);          // stem
-    ctx.lineWidth = 0.06 * s; ctx.strokeStyle = '#8a6a1f'; ctx.stroke();
-    ctx.fillStyle = '#e9b824'; ctx.lineWidth = 0.025 * s;                        // grains
-    for (const y of [-0.16, 0.02, 0.20]) {
-      for (const side of [-1, 1]) {
-        ctx.beginPath();
-        ctx.ellipse(side * 0.11 * s, (y - 0.02) * s, 0.06 * s, 0.12 * s, side * 0.55, 0, Math.PI * 2);
-        ctx.fill(); ctx.stroke();
+    if (kind === 'crop') {
+      ctx.beginPath(); ctx.moveTo(0, 0.34 * s); ctx.lineTo(0, -0.28 * s);          // stem
+      ctx.lineWidth = 0.06 * s; ctx.strokeStyle = '#8a6a1f'; ctx.stroke();
+      ctx.fillStyle = '#e9b824'; ctx.lineWidth = 0.025 * s;                        // grains
+      for (const y of [-0.16, 0.02, 0.20]) {
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.ellipse(side * 0.11 * s, (y - 0.02) * s, 0.06 * s, 0.12 * s, side * 0.55, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+        }
+      }
+      ctx.beginPath(); ctx.ellipse(0, -0.33 * s, 0.06 * s, 0.11 * s, 0, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    } else {
+      ctx.fillStyle = '#6b4a2f';                                                   // paw print
+      ctx.beginPath(); ctx.ellipse(0, 0.13 * s, 0.2 * s, 0.16 * s, 0, 0, Math.PI * 2); ctx.fill();
+      for (const [x, y, rot] of [[-0.25, -0.08, -0.45], [-0.09, -0.25, -0.15], [0.09, -0.25, 0.15], [0.25, -0.08, 0.45]]) {
+        ctx.beginPath(); ctx.ellipse(x * s, y * s, 0.075 * s, 0.1 * s, rot, 0, Math.PI * 2); ctx.fill();
       }
     }
-    ctx.beginPath(); ctx.ellipse(0, -0.33 * s, 0.06 * s, 0.11 * s, 0, 0, Math.PI * 2);
-    ctx.fill(); ctx.stroke();
     ctx.restore();
   }
 
@@ -187,11 +196,20 @@ export class Renderer {
         this.hexPath(cx, cy);
         ctx.fill();
         ctx.stroke();
-        // River and volcano take the tile centre. A crop shares the tile as a small corner badge.
-        const base = map.river[idx] !== 0 || map.feature[idx] === 1;
+        // River and volcano take the tile centre. Crop and livestock icons become small
+        // badges so up to three icons fit on one tile.
+        const hasBase = map.river[idx] !== 0 || map.feature[idx] === 1;
+        const crop = map.crop[idx] !== 0, stock = map.livestock[idx] !== 0;
         if (map.river[idx]) this.drawRiver(cx, cy);
         if (map.feature[idx] === 1) this.drawVolcano(cx, cy);
-        if (map.crop[idx]) this.drawCrop(cx, cy, base);
+        if (hasBase) {                                                    // corners under the base icon
+          if (crop) this.drawBadge('crop', cx, cy, 0.40, 0.40, 0.6);
+          if (stock) this.drawBadge('livestock', cx, cy, -0.40, 0.40, 0.6);
+        } else if (crop && stock) {                                       // side by side
+          this.drawBadge('crop', cx, cy, -0.34, 0, 0.72);
+          this.drawBadge('livestock', cx, cy, 0.34, 0, 0.72);
+        } else if (crop) this.drawBadge('crop', cx, cy, 0, 0, 1);
+        else if (stock) this.drawBadge('livestock', cx, cy, 0, 0, 1);
       }
     }
 

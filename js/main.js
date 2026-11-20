@@ -1,4 +1,4 @@
-import { WorldMap, TERRAIN, FEATURES, BIOMES, CROPS } from './map.js';
+import { WorldMap, TERRAIN, FEATURES, BIOMES, CROPS, LIVESTOCK } from './map.js';
 import { Renderer } from './renderer.js';
 import { generateWorld } from './worldgen.js';
 
@@ -12,6 +12,7 @@ document.getElementById('stats').textContent =
 
 // ---- hover ----
 const biomeText = (i) => map.biome[i] ? ` · ${BIOMES[map.biome[i]].name}` : '';
+const livestockText = (i) => map.livestock[i] ? ` · Livestock: ${LIVESTOCK[map.livestock[i]].name}` : '';
 const cropText = (i) => map.crop[i] ? ` · Crop: ${CROPS[map.crop[i]].name}` : '';
 const riverText = (i) => map.river[i] ? ' · River' : '';
 const rainText = (i) => TERRAIN[map.terrain[i]].land ? ` · ${Math.round(map.precipitation[i])} mm` : '';
@@ -20,7 +21,7 @@ function setHover(px, py) {
   const same = t && view.hover && t.c === view.hover.c && t.row === view.hover.row;
   if (!same) { view.hover = t; view.dirty = true; }
   info.textContent = t
-    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))}${biomeText(map.index(t.col, t.row))}${riverText(map.index(t.col, t.row))}${cropText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
+    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))}${biomeText(map.index(t.col, t.row))}${riverText(map.index(t.col, t.row))}${cropText(map.index(t.col, t.row))}${livestockText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
     : 'Hover over a tile';
 }
 
@@ -168,6 +169,9 @@ function renderReport() {
   const cr = meta.crops;
   const cropLine = `<p>${cr.placed} of ${cr.total} crops placed, per continent: ${cr.perContinent.map(c => c.count).join(', ')}.` +
     (cr.missing.length ? ` Not placed (no such biome on a continent): ${cr.missing.join(', ')}.` : '') + '</p>';
+  const lv = meta.livestock;
+  const livestockLine = `<p>${lv.placed} of ${lv.total} livestock placed, per continent: ${lv.perContinent.map(c => c.count).join(', ')}.` +
+    (lv.missing.length ? ` Not placed (no such biome on a continent): ${lv.missing.join(', ')}.` : '') + '</p>';
   const rl = meta.relief;
   const reliefLine = `<p>Extra relief: ${rl.mountainRanges} mountain ranges, ${rl.hillRanges} hill ranges, ${rl.basins} basins, ${rl.lakes} lakes, ${rl.islands} islands.</p>`;
   const v = meta.volcanoes;
@@ -185,6 +189,7 @@ function renderReport() {
      ${volcanoLine}
      ${riverLine}
      ${cropLine}
+     ${livestockLine}
      ${tempLine}
      ${rainLine}
      <ul>${biomeList}</ul>

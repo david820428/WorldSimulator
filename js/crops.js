@@ -1,12 +1,14 @@
 // Layer 8: crop resources. Crops come from biomes only (never from elevation or latitude).
+// Livestock (livestock.js) reuses the same placement routine.
 //
-// For each crop type (CROPS in map.js):
+// For each resource type (CROPS in map.js):
 //   candidates = walkable land tiles (lowland or hills, never impassable mountains) of the
-//                crop's own biome that lie on a continent (not an island) and hold no crop yet
-//   pick ONE of them uniformly at random  ->  exactly one tile of that crop in the world
-//   no candidates?  ->  that crop is simply not generated this time
+//                type's own biome that lie on a continent (not an island) and do not already
+//                hold a resource OF THE SAME KIND (a crop and a livestock may share a tile)
+//   pick ONE of them uniformly at random  ->  exactly one tile of that type in the world
+//   no candidates?  ->  that type is simply not generated this time
 // Because every pick is uniform over all candidates, a continent with more of a biome
-// tends to get more of its crops, and a continent can end up with none.
+// tends to get more of its resources, and a continent can end up with none.
 
 import { TERRAIN, CROPS } from './map.js';
 
@@ -14,10 +16,11 @@ export const CROP_DEFAULTS = {
   continentMinTiles: 30,    // a landmass this big is a continent; smaller landmasses are islands
 };
 
-export function applyCrops(map, rng, opts = {}) {
+// items: [{ name, biome, id }]; target: the per-tile array that receives the ids
+export function placeOnePerType(map, rng, items, target, opts = {}) {
   const o = { ...CROP_DEFAULTS, ...opts };
   const N = map.size, W = map.cols;
-  map.crop.fill(0);
+  target.fill(0);
 
   // ---- continents: connected land of at least continentMinTiles ----
   const nbrs = (i) => map.neighbors(i % W, (i / W) | 0).map(([c, r]) => r * W + c);
@@ -33,19 +36,23 @@ export function applyCrops(map, rng, opts = {}) {
   const contOf = new Int32Array(N).fill(-1);
   continents.forEach((tiles, k) => tiles.forEach(i => { contOf[i] = k; }));
 
-  // ---- one tile per crop ----
-  const result = { placed: 0, total: CROPS.length - 1, missing: [], list: [], perContinent: continents.map(t => ({ size: t.length, count: 0 })) };
-  for (const crop of CROPS.slice(1)) {
+  // ---- one tile per type ----
+  const result = { placed: 0, total: items.length, missing: [], list: [], perContinent: continents.map(t => ({ size: t.length, count: 0 })) };
+  for (const item of items) {
     const pool = [];
     for (let i = 0; i < N; i++) {
-      if (map.biome[i] === crop.biome && contOf[i] >= 0 && !map.crop[i] && TERRAIN[map.terrain[i]].walkable) pool.push(i);
+      if (map.biome[i] === item.biome && contOf[i] >= 0 && !target[i] && TERRAIN[map.terrain[i]].walkable) pool.push(i);
     }
-    if (!pool.length) { result.missing.push(crop.name); continue; }   // no such biome on a continent: give up
+    if (!pool.length) { result.missing.push(item.name); continue; }   // no such biome on a continent: give up
     const tile = pool[Math.floor(rng() * pool.length)];
-    map.crop[tile] = crop.id;
+    target[tile] = item.id;
     result.placed++;
     result.perContinent[contOf[tile]].count++;
-    result.list.push({ crop: crop.name, tile, continent: contOf[tile] });
+    result.list.push({ name: item.name, tile, continent: contOf[tile] });
   }
   return result;
+}
+
+export function applyCrops(map, rng, opts = {}) {
+  return placeOnePerType(map, rng, CROPS.slice(1), map.crop, opts);
 }

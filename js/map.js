@@ -60,6 +60,26 @@ export const LIVESTOCK = [{ name: 'None', biome: 0 },
   ...LIVESTOCK_TABLE.flatMap(([biome, names]) => names.map(name => ({ biome, name })))]
   .map((c, id) => ({ ...c, id }));
 
+// Geological deposits and where they may spawn (terrain only, never climate).
+// terrain: 2 lowland, 3 hills. river: tile has a river. coastal: touches ocean/sea.
+// nextToMountain: a walkable tile beside a mountain tile.
+const GEO_TABLE = [
+  ['Flint',     { terrain: 2, river: true }],
+  ['Clay',      { terrain: 2, river: true }],
+  ['Limestone', { terrain: 3 }],
+  ['Granite',   { terrain: 3 }],
+  ['Copper',    { terrain: 3 }],
+  ['Iron',      { terrain: 2 }],
+  ['Silver',    { nextToMountain: true }],
+  ['Gold',      { nextToMountain: true, river: true }],
+  ['Niter',     { terrain: 2 }],
+  ['Coal',      { terrain: 3 }],
+  ['Oil',       { terrain: 2, coastal: true }],
+  ['Gas',       { terrain: 2, coastal: true }],
+];
+export const GEO_RESOURCES = [{ name: 'None', rule: {} },
+  ...GEO_TABLE.map(([name, rule]) => ({ name, rule }))].map((r, id) => ({ ...r, id }));
+
 // Features sit on top of terrain (a volcano on a plain is still a plain).
 export const FEATURES = [
   { id: 0, name: 'None' },
@@ -79,6 +99,7 @@ export class WorldMap {
     this.biome = new Uint8Array(this.size);   // index into BIOMES (0 on water)
     this.river = new Uint8Array(this.size);   // river number on this tile (0 = none)
     this.riverTo = new Int16Array(this.size).fill(-1); // next tile downstream (-1 = mouth at the sea)
+    this.geo = new Uint8Array(this.size);     // index into GEO_RESOURCES (0 = none)
     this.livestock = new Uint8Array(this.size); // index into LIVESTOCK (0 = none)
     this.crop = new Uint8Array(this.size);    // index into CROPS (0 = none)
     this.feature = new Uint8Array(this.size); // index into FEATURES

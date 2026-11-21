@@ -4,7 +4,7 @@ import { generateWorld } from './worldgen.js';
 
 const canvas = document.getElementById('map');
 const info = document.getElementById('tile-info');
-const map = new WorldMap(160, 100);          // 4,000 tiles
+const map = new WorldMap(80, 50);          // 4,000 tiles
 const view = new Renderer(canvas, map);
 
 document.getElementById('stats').textContent =

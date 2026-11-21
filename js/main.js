@@ -1,6 +1,7 @@
 import { WorldMap, TERRAIN, FEATURES, BIOMES, CROPS, LIVESTOCK, GEO_RESOURCES } from './map.js';
 import { Renderer } from './renderer.js';
 import { generateWorld } from './worldgen.js';
+import { Game, ROUND_MS } from './game.js';
 
 const canvas = document.getElementById('map');
 const info = document.getElementById('tile-info');
@@ -102,6 +103,70 @@ document.getElementById('zoom-out').onclick = () => view.zoomAt(...center(), 1 /
 document.getElementById('reset').onclick = () => view.reset();
 
 window.addEventListener('resize', () => view.resize());
+
+// ---- game: clock, speed banner, event log (separate from the world; it never changes the map) ----
+let game = new Game('earth', 0);
+let worldSeed = 'earth';
+const gEl = {
+  pause: document.getElementById('g-pause'), play: document.getElementById('g-play'),
+  speeds: [...document.querySelectorAll('[data-speed]')], round: document.getElementById('g-round'),
+  status: document.getElementById('g-status'), meter: document.getElementById('g-meter'),
+  mode: document.getElementById('g-mode'), decision: document.getElementById('g-decision'),
+  list: document.getElementById('g-log-list'),
+};
+const STATUS_TEXT = { start: 'Press Play to begin', player: 'Paused', event: 'Paused for an event - press Play',
+                      decision: 'Waiting for your decision', decided: 'Decision made - press Play to continue',
+                      tab: 'Paused - the tab was hidden' };
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+gEl.pause.onclick = () => game.pause('player');
+gEl.play.onclick = () => game.play(1);
+gEl.speeds.forEach(b => { b.onclick = () => game.play(Number(b.dataset.speed)); });
+gEl.mode.onchange = () => game.setMode(Number(gEl.mode.value));
+gEl.decision.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('button[data-i]');
+  if (b) game.choose(Number(b.dataset.i));
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) game.pause('tab'); });   // hidden tab = pause
+window.addEventListener('keydown', (e) => {
+  if (e.key !== ' ' || /^(BUTTON|INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName || '')) return;
+  e.preventDefault();
+  if (game.playing) game.pause('player'); else game.play();
+});
+
+let drawnVersion = -1;
+function updateGameUI() {
+  gEl.round.textContent = `Round ${game.round}`;
+  const waiting = game.status === 'decision';
+  gEl.status.textContent = game.status === 'running' ? `Running \u00d7${game.speed}` : STATUS_TEXT[game.status];
+  gEl.status.classList.toggle('alert', waiting || game.status === 'event');
+  gEl.meter.style.width = (game.running ? (game.progress / ROUND_MS) * 100 : 0) + '%';
+  gEl.pause.setAttribute('aria-pressed', String(!game.playing));
+  gEl.play.setAttribute('aria-pressed', String(game.running && game.speed === 1));
+  gEl.speeds.forEach(b => b.setAttribute('aria-pressed', String(game.running && game.speed === Number(b.dataset.speed))));
+  [gEl.play, ...gEl.speeds].forEach(b => { b.disabled = waiting; });      // locked until the decision is made
+  if (game.version === drawnVersion) return;
+  drawnVersion = game.version;
+  gEl.list.innerHTML = game.entries.slice().reverse().slice(0, 80)
+    .map(e => `<li class="${e.kind}"><b>R${e.round}</b>${esc(e.text)}</li>`).join('');
+  const ev = game.pending;
+  gEl.decision.hidden = !ev;
+  if (ev) {
+    gEl.decision.innerHTML = `<h3>${esc(ev.title)}</h3><p>${esc(ev.text)}</p><div class="opts">` +
+      ev.options.map((o, i) => `<button data-i="${i}">${esc(o.label)}</button>`).join('') +
+      `</div><p class="note">The game waits until you choose, then press Play to continue.</p>`;
+  }
+}
+
+// A new world means a new game; ask first if one is running.
+function newWorld(seed) {
+  if (game.round > 0 && !window.confirm('Start a new world? Your current game will be lost.')) {
+    document.querySelector(`input[name="size"][value="${sizeKey}"]`).checked = true;   // undo a size change
+    seedInput.value = worldSeed;
+    return;
+  }
+  generate(seed);
+}
 
 // ---- world generation UI ----
 const seedInput = document.getElementById('seed');
@@ -219,17 +284,20 @@ function renderReport() {
 function generate(seed) {
   seed = String(seed).trim() || 'earth';
   seedInput.value = seed;
+  worldSeed = seed;
   useSize(chosenSize());                                // the size is applied whenever a world is generated
   meta = generateWorld(map, seed);
   view.art.rebuild();                                   // forget the old world's drawn shapes
   // The size goes in the link too (medium is the default), because a seed makes a different world per size
   history.replaceState(null, '', '#' + encodeURIComponent(seed) + (sizeKey === 'medium' ? '' : '&size=' + sizeKey));
   statsEl.textContent = `${sizeKey[0].toUpperCase() + sizeKey.slice(1)} world, wraps east–west`;
+  game = new Game(`${seed}:${sizeKey}`, Math.floor(Math.random() * 4294967296), Number(gEl.mode.value));   // fresh game, paused
+  drawnVersion = -1;
   paint(); renderReport();
 }
 
-document.getElementById('seed-form').addEventListener('submit', (e) => { e.preventDefault(); generate(seedInput.value); });
-document.getElementById('dice').onclick = () => generate(Math.random().toString(36).slice(2, 8));
+document.getElementById('seed-form').addEventListener('submit', (e) => { e.preventDefault(); newWorld(seedInput.value); });
+document.getElementById('dice').onclick = () => newWorld(Math.random().toString(36).slice(2, 8));
 softEdges.onchange = paint;
 for (const b of document.querySelectorAll('[data-mode]')) {
   b.onclick = () => {
@@ -246,8 +314,11 @@ generate(decodeURIComponent(linkHash.replace(SIZE_IN_LINK, '')) || 'earth');
 // ---- main loop: redraw only when something changed ----
 let last = performance.now();
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const elapsed = now - last;
+  const dt = Math.min(0.05, elapsed / 1000);
   last = now;
+  game.advance(Math.min(elapsed, 250));                      // the game clock (never more than 250 ms per frame)
+  updateGameUI();
   if (keys.size) {
     const speed = 700 * dt;                                    // screen px per frame
     let dx = 0, dy = 0;

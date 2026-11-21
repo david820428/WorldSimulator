@@ -96,7 +96,8 @@ window.addEventListener('resize', () => view.resize());
 // ---- world generation UI ----
 const seedInput = document.getElementById('seed');
 const report = document.getElementById('report');
-let meta = null, mode = 'land';
+let meta = null, mode = 'art';
+const softEdges = document.getElementById('soft-edges');
 
 // Colour ramps for the data views: [value, colour] stops
 const TEMP_STOPS = [[-30, '#4b3a9c'], [-15, '#3f78d4'], [0, '#8fd3ee'], [10, '#a9d98c'], [20, '#f2e07a'], [27, '#e8643c'], [30, '#d9442f']];
@@ -130,6 +131,9 @@ function showLegend() {
 const hue = (id) => (id * 137.5) % 360;           // golden-angle hues: neighbours differ
 
 function paint() {
+  // 'Illustrated' view: the graphic layer draws straight from the map data, no colour list needed
+  view.artStyle = mode === 'art' ? (softEdges.checked ? 'organic' : 'hard') : 'none';
+  if (mode === 'art') { showLegend(); view.dirty = true; return; }
   const cols = view.colors;
   for (let i = 0; i < map.size; i++) {
     if (mode === 'land') { cols[i] = TERRAIN[map.terrain[i]].color; continue; }
@@ -206,12 +210,14 @@ function generate(seed) {
   seed = String(seed).trim() || 'earth';
   seedInput.value = seed;
   meta = generateWorld(map, seed);
+  view.art.rebuild();                                   // forget the old world's drawn shapes
   history.replaceState(null, '', '#' + encodeURIComponent(seed));
   paint(); renderReport();
 }
 
 document.getElementById('seed-form').addEventListener('submit', (e) => { e.preventDefault(); generate(seedInput.value); });
 document.getElementById('dice').onclick = () => generate(Math.random().toString(36).slice(2, 8));
+softEdges.onchange = paint;
 for (const b of document.querySelectorAll('[data-mode]')) {
   b.onclick = () => {
     mode = b.dataset.mode;

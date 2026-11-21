@@ -11,12 +11,18 @@
 
   <header class="panel top">
     <h1>World Simulator</h1>
-    <p id="stats">80 × 50 tiles, wraps east–west</p>
+    <p id="stats">Wraps east–west</p>
     <form id="seed-form">
       <label for="seed">Seed</label>
       <input id="seed" type="text" autocomplete="off" spellcheck="false">
       <button type="submit">Generate</button>
       <button type="button" id="dice">Random</button>
+      <div class="sizes" role="radiogroup" aria-label="World size">
+        <span>World size</span>
+        <label><input type="radio" name="size" value="small"> Small</label>
+        <label><input type="radio" name="size" value="medium" checked> Medium</label>
+        <label><input type="radio" name="size" value="large"> Large</label>
+      </div>
     </form>
     <div class="modes" role="group" aria-label="Map view">
       <button data-mode="art" aria-pressed="true">Illustrated</button>

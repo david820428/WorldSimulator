@@ -19,12 +19,14 @@
       <button type="button" id="dice">Random</button>
     </form>
     <div class="modes" role="group" aria-label="Map view">
-      <button data-mode="land" aria-pressed="true">Land and sea</button>
+      <button data-mode="art" aria-pressed="true">Illustrated</button>
+      <button data-mode="land" aria-pressed="false">Land and sea</button>
       <button data-mode="plates" aria-pressed="false">Plates</button>
       <button data-mode="temp" aria-pressed="false">Temperature</button>
       <button data-mode="rain" aria-pressed="false">Rainfall</button>
       <button data-mode="biome" aria-pressed="false">Biomes</button>
     </div>
+    <label class="edges"><input type="checkbox" id="soft-edges" checked> Irregular edges and soft blending</label>
     <div id="legend" hidden><span></span><div class="ramp"></div><span></span></div>
     <div id="report"></div>
   </header>

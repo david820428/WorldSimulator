@@ -4,11 +4,21 @@ import { generateWorld } from './worldgen.js';
 
 const canvas = document.getElementById('map');
 const info = document.getElementById('tile-info');
-const map = new WorldMap(80, 50);          // 4,000 tiles
-const view = new Renderer(canvas, map);
+// World sizes as [columns, rows]. The numbers stay here; the page only shows Small / Medium / Large.
+const SIZES = { small: [64, 40], medium: [80, 50], large: [96, 60] };
+let sizeKey = 'medium';
+let map = new WorldMap(...SIZES[sizeKey]);
+let view = new Renderer(canvas, map);
+const statsEl = document.getElementById('stats');
+const chosenSize = () => document.querySelector('input[name="size"]:checked').value;
 
-document.getElementById('stats').textContent =
-  `${map.cols} × ${map.rows} = ${map.size.toLocaleString()} tiles, wraps east–west`;
+// A different size means a new map and a new renderer (both are built for one fixed size).
+function useSize(key) {
+  if (key === sizeKey) return;
+  sizeKey = key;
+  map = new WorldMap(...SIZES[key]);
+  view = new Renderer(canvas, map);
+}
 
 // ---- hover ----
 const biomeText = (i) => map.biome[i] ? ` · ${BIOMES[map.biome[i]].name}` : '';
@@ -209,9 +219,12 @@ function renderReport() {
 function generate(seed) {
   seed = String(seed).trim() || 'earth';
   seedInput.value = seed;
+  useSize(chosenSize());                                // the size is applied whenever a world is generated
   meta = generateWorld(map, seed);
   view.art.rebuild();                                   // forget the old world's drawn shapes
-  history.replaceState(null, '', '#' + encodeURIComponent(seed));
+  // The size goes in the link too (medium is the default), because a seed makes a different world per size
+  history.replaceState(null, '', '#' + encodeURIComponent(seed) + (sizeKey === 'medium' ? '' : '&size=' + sizeKey));
+  statsEl.textContent = `${sizeKey[0].toUpperCase() + sizeKey.slice(1)} world, wraps east–west`;
   paint(); renderReport();
 }
 
@@ -225,7 +238,10 @@ for (const b of document.querySelectorAll('[data-mode]')) {
     paint();
   };
 }
-generate(decodeURIComponent(location.hash.slice(1)) || 'earth');
+const SIZE_IN_LINK = /&size=(small|medium|large)$/;
+const linkHash = location.hash.slice(1), linkSize = linkHash.match(SIZE_IN_LINK);
+if (linkSize) document.querySelector(`input[name="size"][value="${linkSize[1]}"]`).checked = true;
+generate(decodeURIComponent(linkHash.replace(SIZE_IN_LINK, '')) || 'earth');
 
 // ---- main loop: redraw only when something changed ----
 let last = performance.now();

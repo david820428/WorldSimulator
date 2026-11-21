@@ -148,7 +148,7 @@ function updateGameUI() {
   if (game.version === drawnVersion) return;
   drawnVersion = game.version;
   gEl.list.innerHTML = game.entries.slice().reverse().slice(0, 80)
-    .map(e => `<li class="${e.kind}"><b>R${e.round}</b>${esc(e.text)}</li>`).join('');
+    .map(e => `<li class="log-${e.kind}"><b>R${e.round}</b>${esc(e.text)}</li>`).join('');
   const ev = game.pending;
   gEl.decision.hidden = !ev;
   if (ev) {

@@ -43,6 +43,35 @@
     <button id="reset" aria-label="Reset view">Reset</button>
   </div>
 
+  <aside class="panel decision" id="g-decision" hidden aria-live="polite"></aside>
+
+  <aside class="panel log" id="g-log" aria-label="Event log">
+    <h2>Events</h2>
+    <ol id="g-log-list"></ol>
+  </aside>
+
+  <div class="panel game-bar" role="group" aria-label="Game speed">
+    <div class="speed">
+      <button id="g-pause" aria-label="Pause" title="Pause (Space)">&#10074;&#10074;</button>
+      <button id="g-play" aria-label="Play" title="Play at normal speed (Space)">&#9654;</button>
+      <button data-speed="2" title="Twice as fast">&times;2</button>
+      <button data-speed="4" title="Four times as fast">&times;4</button>
+      <button data-speed="8" title="Eight times as fast">&times;8</button>
+    </div>
+    <div class="round">
+      <strong id="g-round">Round 0</strong>
+      <small id="g-status">Press Play to begin</small>
+      <div class="meter"><i id="g-meter"></i></div>
+    </div>
+    <label class="mode">When events happen
+      <select id="g-mode" aria-label="When events happen">
+        <option value="1">Pause on decisions</option>
+        <option value="2">Pause on every event</option>
+        <option value="3">Never pause (random choices)</option>
+      </select>
+    </label>
+  </div>
+
   <footer class="panel bottom">
     <span id="tile-info">Hover over a tile</span>
     <span class="hint">Drag or arrow keys to scroll. Wheel, pinch or +/− to zoom.</span>

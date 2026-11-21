@@ -1,6 +1,8 @@
 // Canvas renderer + camera for a pointy-top hex map that wraps east-west.
 // World units: hex radius = HEX_SIZE. Tile (0,0) is centred at world (0,0).
 
+import { MapArt } from './graphics.js';
+
 const HEX_SIZE = 32;
 const SQRT3 = Math.sqrt(3);
 const MAX_ZOOM = 3;
@@ -24,6 +26,8 @@ export class Renderer {
 
     this.cam = { x: this.worldW / 2, y: this.top + this.worldH / 2, zoom: 1 };
     this.colors = new Array(map.size).fill('#2d6f8e');   // one CSS colour per tile
+    this.art = new MapArt(map, HEX_SIZE);                // illustrated look (graphics.js)
+    this.artStyle = 'none';                              // 'none' = flat colours, 'hard' or 'organic' = illustrated
     this.hover = null;
     this.dirty = true;
     this.resize();
@@ -193,7 +197,8 @@ export class Renderer {
     const outline = cam.zoom > 0.35;
     const gridColor = 'rgba(15, 35, 45, 0.28)';
 
-    for (let row = r0; row <= r1; row++) {
+    if (this.artStyle !== 'none') this.art.draw(ctx, this, r0, r1, c0, c1, this.artStyle);
+    else for (let row = r0; row <= r1; row++) {
       const offset = (row & 1) * 0.5;
       for (let c = c0; c <= c1; c++) {
         const idx = map.index(c, row);

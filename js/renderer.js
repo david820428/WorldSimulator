@@ -6,6 +6,7 @@ import { MapArt } from './graphics.js';
 const HEX_SIZE = 32;
 const SQRT3 = Math.sqrt(3);
 const MAX_ZOOM = 3;
+const CIV_COLORS = ['#c0392b', '#2e86c1', '#d4a017', '#7d3c98', '#1e8449', '#ca6f1e', '#17a2b8', '#b03a6f', '#5d6d7e', '#8e5b3a'];
 
 export class Renderer {
   constructor(canvas, map) {
@@ -28,6 +29,7 @@ export class Renderer {
     this.colors = new Array(map.size).fill('#2d6f8e');   // one CSS colour per tile
     this.art = new MapArt(map, HEX_SIZE);                // illustrated look (graphics.js)
     this.artStyle = 'none';                              // 'none' = flat colours, 'hard' or 'organic' = illustrated
+    this.civs = [];                                      // starting tiles of the civilizations (set by main.js)
     this.hover = null;
     this.dirty = true;
     this.resize();
@@ -177,6 +179,28 @@ export class Renderer {
     ctx.fillStyle = '#f0662a'; ctx.fill();
   }
 
+  // A coloured flag on each civilization's starting tile (drawn again for every wrapped copy in view).
+  drawCivs(ctx, r0, r1, c0, c1) {
+    const s = HEX_SIZE, rowH = 1.5 * s, cols = this.map.cols;
+    this.civs.forEach((idx, k) => {
+      const col = idx % cols, row = (idx / cols) | 0;
+      if (row < r0 || row > r1) return;
+      for (let c = col + Math.ceil((c0 - col) / cols) * cols; c <= c1; c += cols) {
+        ctx.save();
+        ctx.translate(this.hexW * (c + 0.5 * (row & 1)), rowH * row);
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';                     // pale disc so the flag stands out on any terrain
+        ctx.beginPath(); ctx.arc(0, 0, 0.62 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#3a3128'; ctx.lineWidth = 0.07 * s;           // pole
+        ctx.beginPath(); ctx.moveTo(-0.1 * s, 0.4 * s); ctx.lineTo(-0.1 * s, -0.46 * s); ctx.stroke();
+        ctx.fillStyle = CIV_COLORS[k % CIV_COLORS.length]; ctx.strokeStyle = '#2b2b2b'; ctx.lineWidth = 0.045 * s;   // pennant
+        ctx.beginPath(); ctx.moveTo(-0.1 * s, -0.46 * s); ctx.lineTo(0.46 * s, -0.28 * s); ctx.lineTo(-0.1 * s, -0.08 * s);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    });
+  }
+
   draw() {
     const { ctx, cam, map, hexW } = this;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -227,6 +251,8 @@ export class Renderer {
         }
       }
     }
+
+    if (this.civs.length) this.drawCivs(ctx, r0, r1, c0, c1);
 
     if (this.hover) {
       const h = this.hover;

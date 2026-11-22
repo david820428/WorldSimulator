@@ -2,6 +2,7 @@ import { WorldMap, TERRAIN, FEATURES, BIOMES, CROPS, LIVESTOCK, GEO_RESOURCES } 
 import { Renderer } from './renderer.js';
 import { generateWorld } from './worldgen.js';
 import { Game, ROUND_MS } from './game.js';
+import { placeCivilizations, CIV_COUNT } from './spawn.js';
 
 const canvas = document.getElementById('map');
 const info = document.getElementById('tile-info');
@@ -26,6 +27,7 @@ const biomeText = (i) => map.biome[i] ? ` · ${BIOMES[map.biome[i]].name}` : '';
 const geoText = (i) => map.geo[i] ? ` · Deposit: ${GEO_RESOURCES[map.geo[i]].name}` : '';
 const livestockText = (i) => map.livestock[i] ? ` · Livestock: ${LIVESTOCK[map.livestock[i]].name}` : '';
 const cropText = (i) => map.crop[i] ? ` · Crop: ${CROPS[map.crop[i]].name}` : '';
+const civText = (i) => { const k = game.civs.indexOf(i); return k >= 0 ? ` · Start of civilization ${k + 1}` : ''; };
 const riverText = (i) => map.river[i] ? ' · River' : '';
 const rainText = (i) => TERRAIN[map.terrain[i]].land ? ` · ${Math.round(map.precipitation[i])} mm` : '';
 function setHover(px, py) {
@@ -33,7 +35,7 @@ function setHover(px, py) {
   const same = t && view.hover && t.c === view.hover.c && t.row === view.hover.row;
   if (!same) { view.hover = t; view.dirty = true; }
   info.textContent = t
-    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))}${biomeText(map.index(t.col, t.row))}${riverText(map.index(t.col, t.row))}${cropText(map.index(t.col, t.row))}${livestockText(map.index(t.col, t.row))}${geoText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
+    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))}${biomeText(map.index(t.col, t.row))}${riverText(map.index(t.col, t.row))}${cropText(map.index(t.col, t.row))}${livestockText(map.index(t.col, t.row))}${geoText(map.index(t.col, t.row))}${civText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
     : 'Hover over a tile';
 }
 
@@ -255,6 +257,7 @@ function renderReport() {
   const ge = meta.geology;
   const geoLine = `<p>${ge.placed} of ${ge.total} deposits placed, per continent: ${ge.perContinent.map(c => c.count).join(', ')} (${ge.perContinent.map(c => c.kinds).join(', ')} kinds).` +
     (ge.short.length ? ` Fewer than planned: ${ge.short.join(', ')}.` : '') + '</p>';
+  const civLine = `<p class="${game.civs.length < game.civWanted ? 'warn' : ''}">${game.civs.length} of ${game.civWanted} civilizations are placed.</p>`;
   const rl = meta.relief;
   const reliefLine = `<p>Extra relief: ${rl.mountainRanges} mountain ranges, ${rl.hillRanges} hill ranges, ${rl.basins} basins, ${rl.lakes} lakes, ${rl.islands} islands.</p>`;
   const v = meta.volcanoes;
@@ -274,6 +277,7 @@ function renderReport() {
      ${cropLine}
      ${livestockLine}
      ${geoLine}
+     ${civLine}
      ${tempLine}
      ${rainLine}
      <ul>${biomeList}</ul>
@@ -293,6 +297,9 @@ function generate(seed) {
   statsEl.textContent = `${sizeKey[0].toUpperCase() + sizeKey.slice(1)} world, wraps east–west`;
   game = new Game(`${seed}:${sizeKey}`, Math.floor(Math.random() * 4294967296), Number(gEl.mode.value));   // fresh game, paused
   drawnVersion = -1;
+  // Where the civilizations start: chosen once per game from the finished world, which is left untouched
+  game.setSpawn(placeCivilizations(map, CIV_COUNT[sizeKey], () => game.rand()));
+  view.civs = game.civs;
   paint(); renderReport();
 }
 

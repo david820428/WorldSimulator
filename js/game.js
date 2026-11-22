@@ -66,6 +66,15 @@ export class Game {
     this.queue = [];                       // events waiting to be handled
     this.entries = [];                     // the event log, oldest first
     this.version = 0;                      // goes up whenever anything the screen shows has changed
+    this.civs = [];                        // starting tile of each civilization (see spawn.js)
+    this.civWanted = 0;                    // how many were asked for
+  }
+
+  // Remember the starting positions and tell the player how many fitted.
+  setSpawn({ tiles, wanted }) {
+    this.civs = tiles;
+    this.civWanted = wanted;
+    this.log('system', `${tiles.length} of ${wanted} civilizations are placed.`, 0);
   }
 
   // The game only moves while the player has pressed Play and no decision is waiting.

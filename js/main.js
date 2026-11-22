@@ -27,6 +27,7 @@ const biomeText = (i) => map.biome[i] ? ` · ${BIOMES[map.biome[i]].name}` : '';
 const geoText = (i) => map.geo[i] ? ` · Deposit: ${GEO_RESOURCES[map.geo[i]].name}` : '';
 const livestockText = (i) => map.livestock[i] ? ` · Livestock: ${LIVESTOCK[map.livestock[i]].name}` : '';
 const cropText = (i) => map.crop[i] ? ` · Crop: ${CROPS[map.crop[i]].name}` : '';
+const ownerText = (i) => (game.explore && game.explore.owner[i]) ? ` · Explored by civilization ${game.explore.owner[i]}` : '';
 const civText = (i) => { const k = game.civs.indexOf(i); return k >= 0 ? ` · Start of civilization ${k + 1}` : ''; };
 const riverText = (i) => map.river[i] ? ' · River' : '';
 const rainText = (i) => TERRAIN[map.terrain[i]].land ? ` · ${Math.round(map.precipitation[i])} mm` : '';
@@ -35,7 +36,7 @@ function setHover(px, py) {
   const same = t && view.hover && t.c === view.hover.c && t.row === view.hover.row;
   if (!same) { view.hover = t; view.dirty = true; }
   info.textContent = t
-    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))}${biomeText(map.index(t.col, t.row))}${riverText(map.index(t.col, t.row))}${cropText(map.index(t.col, t.row))}${livestockText(map.index(t.col, t.row))}${geoText(map.index(t.col, t.row))}${civText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
+    ? `Tile ${t.col}, ${t.row} · ${TERRAIN[map.terrain[map.index(t.col, t.row)]].name} · ${map.temperature[map.index(t.col, t.row)].toFixed(0)}°C${rainText(map.index(t.col, t.row))}${biomeText(map.index(t.col, t.row))}${riverText(map.index(t.col, t.row))}${cropText(map.index(t.col, t.row))}${livestockText(map.index(t.col, t.row))}${geoText(map.index(t.col, t.row))}${civText(map.index(t.col, t.row))}${ownerText(map.index(t.col, t.row))} · ${map.plates[map.plate[map.index(t.col, t.row)]]?.name ?? ''}${map.feature[map.index(t.col, t.row)] ? ' · ' + FEATURES[map.feature[map.index(t.col, t.row)]].name : ''}`
     : 'Hover over a tile';
 }
 
@@ -136,8 +137,9 @@ window.addEventListener('keydown', (e) => {
   if (game.playing) game.pause('player'); else game.play();
 });
 
-let drawnVersion = -1;
+let drawnVersion = -1, seenExplore = -1;
 function updateGameUI() {
+  if (game.explore && game.explore.version !== seenExplore) { seenExplore = game.explore.version; view.dirty = true; }   // territory changed: redraw
   gEl.round.textContent = `Round ${game.round}`;
   const waiting = game.status === 'decision';
   gEl.status.textContent = game.status === 'running' ? `Running \u00d7${game.speed}` : STATUS_TEXT[game.status];
@@ -299,7 +301,10 @@ function generate(seed) {
   drawnVersion = -1;
   // Where the civilizations start: chosen once per game from the finished world, which is left untouched
   game.setSpawn(placeCivilizations(map, CIV_COUNT[sizeKey], () => game.rand()));
+  game.startExploration(map);                            // exploration starts from the spawn tiles (read-only on the map)
   view.civs = game.civs;
+  view.owner = game.explore.owner;
+  seenExplore = -1;
   paint(); renderReport();
 }
 

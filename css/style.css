@@ -108,3 +108,5 @@ body { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: v
 .log li.log-auto { font-style: italic; color: #c9d4cf; }
 .log li.log-system { color: var(--muted); }
 @media (max-width: 700px) { .log { display: none; } }
+
+#report p.warn { color: var(--accent); }

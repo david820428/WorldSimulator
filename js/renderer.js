@@ -6,6 +6,10 @@ import { MapArt } from './graphics.js';
 const HEX_SIZE = 32;
 const SQRT3 = Math.sqrt(3);
 const MAX_ZOOM = 3;
+// Corner k of a pointy-top hex (0 top, 1 top-right, 2 bottom-right, 3 bottom, 4 bottom-left, 5 top-left); edge k joins
+// corner k to k+1 and faces map direction EDGE_DIR[k] (0 E, 1 NE, 2 NW, 3 W, 4 SW, 5 SE).
+const HEX_CORNER = [0, 1, 2, 3, 4, 5].map(k => [Math.cos((60 * k - 90) * Math.PI / 180), Math.sin((60 * k - 90) * Math.PI / 180)]);
+const EDGE_DIR = [1, 0, 5, 4, 3, 2];
 const CIV_COLORS = ['#c0392b', '#2e86c1', '#d4a017', '#7d3c98', '#1e8449', '#ca6f1e', '#17a2b8', '#b03a6f', '#5d6d7e', '#8e5b3a'];
 
 export class Renderer {
@@ -30,6 +34,7 @@ export class Renderer {
     this.art = new MapArt(map, HEX_SIZE);                // illustrated look (graphics.js)
     this.artStyle = 'none';                              // 'none' = flat colours, 'hard' or 'organic' = illustrated
     this.civs = [];                                      // starting tiles of the civilizations (set by main.js)
+    this.owner = null;                                   // who has explored each tile (set by main.js)
     this.hover = null;
     this.dirty = true;
     this.resize();
@@ -179,6 +184,32 @@ export class Renderer {
     ctx.fillStyle = '#f0662a'; ctx.fill();
   }
 
+  // Debug view: a line in each civilization's colour along the edges where its explored area ends.
+  // The line is drawn slightly inside each border tile, so two civilizations that touch show two lines.
+  drawTerritory(ctx, r0, r1, c0, c1) {
+    const s = HEX_SIZE, rowH = 1.5 * s, map = this.map, owner = this.owner;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(2.5 / this.cam.zoom, 0.11 * s);
+    for (let row = r0; row <= r1; row++) {
+      for (let c = c0; c <= c1; c++) {
+        const col = map.wrapCol(c), o = owner[row * map.cols + col];
+        if (!o) continue;
+        const cx = this.hexW * (c + 0.5 * (row & 1)), cy = rowH * row;
+        ctx.beginPath();
+        let any = false;
+        for (let k = 0; k < 6; k++) {
+          const n = map.step(col, row, EDGE_DIR[k]);
+          if (n >= 0 && owner[n] === o) continue;                     // inside the territory: no line
+          const a = HEX_CORNER[k], b = HEX_CORNER[(k + 1) % 6];
+          ctx.moveTo(cx + a[0] * 0.88 * s, cy + a[1] * 0.88 * s);
+          ctx.lineTo(cx + b[0] * 0.88 * s, cy + b[1] * 0.88 * s);
+          any = true;
+        }
+        if (any) { ctx.strokeStyle = CIV_COLORS[(o - 1) % CIV_COLORS.length]; ctx.stroke(); }
+      }
+    }
+  }
+
   // A coloured flag on each civilization's starting tile (drawn again for every wrapped copy in view).
   drawCivs(ctx, r0, r1, c0, c1) {
     const s = HEX_SIZE, rowH = 1.5 * s, cols = this.map.cols;
@@ -252,6 +283,7 @@ export class Renderer {
       }
     }
 
+    if (this.owner) this.drawTerritory(ctx, r0, r1, c0, c1);
     if (this.civs.length) this.drawCivs(ctx, r0, r1, c0, c1);
 
     if (this.hover) {

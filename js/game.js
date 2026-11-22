@@ -12,6 +12,7 @@
 // A decision always leaves the game paused after it is settled; the player presses Play to continue.
 
 import { hashSeed } from './random.js';
+import { Exploration } from './exploration.js';
 
 export const ROUND_MS = 2000;                 // real time per round at normal speed
 export const SPEEDS = [1, 2, 4, 8];
@@ -68,6 +69,12 @@ export class Game {
     this.version = 0;                      // goes up whenever anything the screen shows has changed
     this.civs = [];                        // starting tile of each civilization (see spawn.js)
     this.civWanted = 0;                    // how many were asked for
+    this.explore = null;                   // exploration state (see exploration.js), created with the starting positions
+  }
+
+  // Start the exploration system from the civilizations' spawn tiles. The map is only read.
+  startExploration(map) {
+    this.explore = new Exploration(map, this.civs, `${this.seed}:${this.salt}`);
   }
 
   // Remember the starting positions and tell the player how many fitted.
@@ -144,7 +151,8 @@ export class Game {
       this.progress -= ROUND_MS;
       this.round++;
       played++;
-      this.queue.push(...eventsForRound(this.round));
+      const found = this.explore ? this.explore.tick(this.round) : [];     // exploration happens every round
+      this.queue.push(...found, ...eventsForRound(this.round));            // contact events, then the scheduled ones
       this.drain();                        // may pause the game: then we stop on exactly this round
     }
     if (!this.running) this.progress = 0;  // leftover time from a fast batch is discarded
